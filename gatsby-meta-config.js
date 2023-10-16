@@ -1,26 +1,26 @@
 module.exports = {
-  title: `zoomkoding.com`,
-  description: `줌코딩의 개발일기`,
+  title: `MoaTech`,
+  description: `모아밤의 개발기록`,
   language: `ko`, // `ko`, `en` => currently support versions for Korean and English
-  siteUrl: `https://www.zoomkoding.com`,
+  siteUrl: `https://moatech.github.io`,
   ogImage: `/og-image.png`, // Path to your in the 'static' folder
   comments: {
     utterances: {
-      repo: ``, // `zoomkoding/zoomkoding-gatsby-blog`,
+      repo: `Moabam/MoaTech`, // `zoomkoding/zoomkoding-gatsby-blog`,
     },
   },
   ga: '0', // Google Analytics Tracking ID
   author: {
-    name: `정진혁`,
+    name: `모아밤`,
     bio: {
-      role: `개발자`,
+      role: `개발팀`,
       description: ['사람에 가치를 두는', '능동적으로 일하는', '이로운 것을 만드는'],
       thumbnail: 'sample.png', // Path to the image in the 'asset' folder
     },
     social: {
-      github: ``, // `https://github.com/zoomKoding`,
-      linkedIn: ``, // `https://www.linkedin.com/in/jinhyeok-jeong-800871192`,
-      email: ``, // `zoomkoding@gmail.com`,
+      github: `https://github.com/Moabam/MoaTech`,
+      linkedIn: ``,
+      email: ``,
     },
   },
 
@@ -43,12 +43,12 @@ module.exports = {
       // ========================================================
       // ========================================================
       {
-        date: '2021.02 ~',
-        activity: '개인 블로그 개발 및 운영',
+        date: '2023.10 ~',
+        activity: '모아밤 프로젝트 기획 및 개발',
         links: {
           post: '/gatsby-starter-zoomkoding-introduction',
-          github: 'https://github.com/zoomkoding/zoomkoding-gatsby-blog',
-          demo: 'https://www.zoomkoding.com',
+          github: 'https://github.com/Moabam/MoaTech',
+          demo: '',
         },
       },
     ],
@@ -72,15 +72,15 @@ module.exports = {
       // ========================================================
       // ========================================================
       {
-        title: '개발 블로그 테마 개발',
+        title: '모아밤 프로젝트',
         description:
-          '개발 블로그를 운영하는 기간이 조금씩 늘어나고 점점 많은 생각과 경험이 블로그에 쌓아가면서 제 이야기를 담고 있는 블로그를 직접 만들어보고 싶게 되었습니다. 그동안 여러 개발 블로그를 보면서 좋았던 부분과 불편했던 부분들을 바탕으로 레퍼런스를 참고하여 직접 블로그 테마를 만들게 되었습니다.',
+          'BE 개발자와 FE 개발자가 함께하는 프로젝트입니다. 모아밤 프로젝트는 모두의 아침과 밤을 줄인 말로 루틴을 실천하고 싶은 사람들을 모아서 매일 특정 시간을 더 알차게 보낸다는 취지로 기획한 프로젝트입니다.',
         techStack: ['gatsby', 'react'],
         thumbnailUrl: 'blog.png',
         links: {
           post: '/gatsby-starter-zoomkoding-introduction',
           github: 'https://github.com/zoomkoding/zoomkoding-gatsby-blog',
-          demo: 'https://www.zoomkoding.com',
+          demo: '',
         },
       },
     ],

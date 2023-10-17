@@ -2,11 +2,11 @@ module.exports = {
   title: `MoaTech`,
   description: `모아밤의 개발기록`,
   language: `ko`, // `ko`, `en` => currently support versions for Korean and English
-  siteUrl: `https://moatech.github.io`,
+  siteUrl: `https://team-moabam.github.io`,
   ogImage: `/og-image.png`, // Path to your in the 'static' folder
   comments: {
     utterances: {
-      repo: `Moabam/MoaTech`, // `zoomkoding/zoomkoding-gatsby-blog`,
+      repo: `team-moabam/team-moabam.github.io`, // `zoomkoding/zoomkoding-gatsby-blog`,
     },
   },
   ga: '0', // Google Analytics Tracking ID
@@ -18,7 +18,7 @@ module.exports = {
       thumbnail: 'sample.png', // Path to the image in the 'asset' folder
     },
     social: {
-      github: `https://github.com/Moabam/MoaTech`,
+      github: `https://github.com/team-moabam/team-moabam.github.io`,
       linkedIn: ``,
       email: ``,
     },
@@ -47,7 +47,7 @@ module.exports = {
         activity: '모아밤 프로젝트 기획 및 개발',
         links: {
           post: '/gatsby-starter-zoomkoding-introduction',
-          github: 'https://github.com/Moabam/MoaTech',
+          github: 'https://github.com/orgs/team-moabam/repositories',
           demo: '',
         },
       },
@@ -79,7 +79,7 @@ module.exports = {
         thumbnailUrl: 'blog.png',
         links: {
           post: '/gatsby-starter-zoomkoding-introduction',
-          github: 'https://github.com/zoomkoding/zoomkoding-gatsby-blog',
+          github: 'https://github.com/orgs/team-moabam/repositories',
           demo: '',
         },
       },

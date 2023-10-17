@@ -2,7 +2,7 @@ name: Blog Deploy
 
 on:
   push:
-    branches: ['main']
+    branches: ['chore/deploy-workflow']
 
 jobs:
   build:
@@ -13,6 +13,15 @@ jobs:
     steps:
       - name: checkout datas
         uses: actions/checkout@v3
+
+      - name: git config
+        env:
+          USER_NAME: ${{ github.event.pusher.name }}
+          USER_EMAIL: ${{ github.event.pusher.email }}
+        run: |
+          git config --global user.email "$USER_EMAIL"
+          git config --global user.name "$USER_NAME"
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:

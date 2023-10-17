@@ -16,8 +16,8 @@ jobs:
 
       - name: git config
         env:
-          USER_NAME: ${{ github.event.pusher.name }}
-          USER_EMAIL: ${{ github.event.pusher.email }}
+          USER_NAME: ${{ github.event.head_commit.author.name }}
+          USER_EMAIL: ${{ github.event.head_commit.author.email }}
         run: |
           git config --global user.email "$USER_EMAIL"
           git config --global user.name "$USER_NAME"

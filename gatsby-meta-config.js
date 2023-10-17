@@ -1,5 +1,5 @@
 module.exports = {
-  title: `MoaTech`,
+  title: `moabam`,
   description: `모아밤의 개발기록`,
   language: `ko`, // `ko`, `en` => currently support versions for Korean and English
   siteUrl: `https://team-moabam.github.io`,

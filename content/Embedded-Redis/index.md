@@ -216,11 +216,11 @@ make
 src/redis-server
 ```
 
-![image](https://github.com/team-moabam/team-moabam.github.io/assets/31675711/cf00ca89-9828-40aa-974d-6687cb3fe792)
+![redis1.png](redis1.png)
 
 **4) 바이너리 파일을 프로젝트에 추가**
 
-![image](https://github.com/team-moabam/team-moabam.github.io/assets/31675711/1d26398d-ad94-4c50-ac2b-7d5ac7061bd8)
+![redis2.png](redis2.png)
 
 **5) EmbeddedRedisConfig에 설정 추가**
 
@@ -274,7 +274,7 @@ public class EmbeddedRedisConfig {
 
 **실행 결과**
 
-![image](https://github.com/team-moabam/team-moabam.github.io/assets/31675711/307551c5-e886-4ce2-acd1-6ba73f239650)
+![redis3.png](redis3.png)
 
 ---
 

@@ -9,13 +9,13 @@ categories: Tech
 
 안녕하세요. 현재 데브코스 4기로 활동 중인 모아밤팀 서버 개발자 홍혁준입니다. 
 
-이번 포스팅에서 Embedded Redis에 대해 이야기를 풀어내 보려고 합니다. 감사합니다.
+이번 포스팅에서 `Embedded Redis`에 대해 이야기를 풀어내 보려고 합니다. 감사합니다.
 
 ---
 
 ## 배경
 
-모아밤에서는 다음 요구사항을 위해 Redis 저장소를 활용하게 되었습니다.
+모아밤에서는 다음 요구사항을 위해 `Redis` 저장소를 활용하게 되었습니다.
 
 -   사용자는 다른 사용자에게 12시간 마다 1회 콕 알림을 보낼 수 있다.
 -   사용자는 자신이 속한 방의 인증타임에 알림이 울립니다.
@@ -26,7 +26,7 @@ categories: Tech
 
 **Spring Data Redis**
 
--   Redis를 마치 JPA Repository 이용하듯 인터페이스를 제공하는 Spring Module 입니다.
+-   `Redis`를 마치 `JPA Repository` 이용하듯 인터페이스를 제공하는 `Spring Module` 입니다.
 
 **Lettuce**
 
@@ -87,7 +87,8 @@ public class EmbeddedRedisConfig {
 
 **3) 통합 테스트 환경 구성**
 
--   2단계까지만 설정 시, 여러 스프링 컨텍스트 실행할 때, `Embedded Redis` 포트 충돌이 날 수 있습니다. 즉, 서로 다른 `Property`를 가진 테스트 코드가 있는 경우 충돌이 날 수 있습니다. 때문에, 아래와 같이 추가 설정이 필요합니다.
+-   2단계까지만 설정 시, 여러 스프링 컨텍스트 실행할 때, `Embedded Redis` 포트 충돌이 날 수 있습니다. 
+즉, 서로 다른 `Property`를 가진 테스트 코드가 있는 경우 충돌이 날 수 있습니다. 때문에, 아래와 같이 추가 설정이 필요합니다.
 -   `startRedis()`에서 메모리 할당을 명시했습니다. 이를 안할 시, [윈도우 환경에서는 문제](https://github.com/kstyrc/embedded-redis/issues/77)가 발생합니다.
 -   그 외 설명은 주석을 확인바랍니다.
 
@@ -185,13 +186,15 @@ public class EmbeddedRedisConfig {
 
 ### 문제 상황
 
-테스트 환경에서 `Ebmedded Redis`가 동작하게 구성했는데, `M1`에서는 `Database`가 실행되지 않는 현상이 발생했습니다.
+테스트 환경에서 `Ebmedded Redis`가 동작하게 구성했는데, `M1`에서는 `Database`가 실행되지 않는 현상이 
+발생했습니다.
 
 ---
 
 ### 원인
 
-`Embedded Redis` 라이브러리에서 `mac_arm64` 용 바이너리가 준비되어 있지 않고 소스 코드에도 `MAC_OS_X_arm64`가 없는 것이 원인입니다.
+`Embedded Redis` 라이브러리에서 `mac_arm64` 용 바이너리가 준비되어 있지 않고 소스 코드에도 
+`MAC_OS_X_arm64`가 없는 것이 원인입니다.
 
 ---
 

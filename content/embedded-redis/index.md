@@ -1,5 +1,5 @@
 ---
-emoji: 🧢
+emoji: 🧑🏻‍💻
 title: Embedded Redis 테스트 환경 적용기 (feat. M1-ARM)
 date: '2023-11-04 19:54:00'
 author: 홍혁준
@@ -20,20 +20,22 @@ categories: Tech
 -   사용자는 다른 사용자에게 12시간 마다 1회 콕 알림을 보낼 수 있다.
 -   사용자는 자신이 속한 방의 인증타임에 알림이 울립니다.
 
-개인적으로 프로젝트 코드를 누군가가 클론했을 때, 즉시 로컬 환경에서는 개발 및 테스트를 시작할 수 있어야 한다고 생각합니다. 때문에, 테스트 할 수 있는 환경 구성이 필요하게 되었고 Embedded Redis을 적용하게 되었습니다. 사용할 기술은 다음과 같습니다.
+개인적으로 프로젝트 코드를 누군가가 클론한다면, 
+그 즉시 개발 및 테스트를 시작할 수 있어야 한다고 생각합니다. 
+때문에, 테스트 할 수 있는 환경 구성을 위해 `Embedded Redis`를 적용하게 되었습니다. 기술 환경은 다음과 같습니다.
 
-#### Spring Data Redis
+**Spring Data Redis**
 
 -   Redis를 마치 JPA Repository 이용하듯 인터페이스를 제공하는 Spring Module 입니다.
 
-#### Lettuce
+**Lettuce**
 
--   Redis Java Client로 현재 Spring Data Redis에서 공식 지원하는 클라이언트입니다.
--   추가로 Jedis도 공식 지원하지만, 거의 업데이트 되지 않아서 Lettuce를 선택하게 되었습니다.
+-   `Redis Java Client`로 현재 `Spring Data Redis`에서 공식 지원하는 클라이언트입니다.
+-   추가로 `Jedis`도 공식 지원하지만, 거의 업데이트 되지 않아서 `Lettuce`를 선택하게 되었습니다.
 
-#### Embedded Redis
+**Embedded Redis**
 
--   H2와 같은 내장 Redis 데몬입니다. 즉, 로컬 환경 Redis를 실행하지 않아도 됩니다.
+-   H2와 같은 내장 Redis 데몬입니다. 즉, 로컬 환경 `Redis`를 실행하지 않아도 됩니다.
 
 ---
 
@@ -41,10 +43,10 @@ categories: Tech
 
 **1) build.gradle 설정**
 
--   내장 Redis는 [it.ozimov](https://github.com/ozimov/embedded-redis) 외에도 [kstyrc](https://github.com/kstyrc/embedded-redis)가 있는데, kstyrc 오랫동안 업데이트가 없어서 kstyrc를 Fork해서 만들어진 it.ozimov 모듈을 사용하게 되었습니다.
--   it.ozimov는 최신 버전으로 0.7.3이 있습니다. 다만, 해당 버전은 [SLF4J가 여러번 바인딩되는 문제](https://github.com/ozimov/embedded-redis/pull/18)가 발생해서 0.7.2 버전을 사용하게 되었습니다. 또 다른 해결 방법으로는 컴파일 시 SLF4J를 제외하는 방법이 있기도 합니다.
+-   내장 `Redis`는 [it.ozimov](https://github.com/ozimov/embedded-redis) 외에도 [kstyrc](https://github.com/kstyrc/embedded-redis)가 있는데, `kstyrc` 오랫동안 업데이트가 없어서 `kstyrc`를 `Fork`해서 만들어진 `it.ozimov` 모듈을 사용하게 되었습니다.
+-   `it.ozimov`는 최신 버전으로 `0.7.3`이 있습니다. 다만, 해당 버전은 [SLF4J가 여러번 바인딩되는 문제](https://github.com/ozimov/embedded-redis/pull/18)가 발생해서 `0.7.2` 버전을 사용하게 되었습니다. 또 다른 해결 방법으로는 컴파일 시 `SLF4J`를 제외하는 방법이 있기도 합니다.
 
-```
+``` bash
 // Redis
 implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
@@ -57,11 +59,9 @@ implementation ('it.ozimov:embedded-redis:0.7.3') { exclude group: "org.slf4j", 
 
 **2) Embedded Redis 시작 및 종료 설정**
 
--   @Profile로 로컬 환경일 때만, 실행되도록 합니다.
--   isRedisRunning() : 
--   findAvailablePort() : 
+-   `@Profile`로 로컬 환경일 때만, 실행되도록 합니다.
 
-```
+``` java
 @Slf4j
 @Profile("local")
 @Configuration
@@ -87,11 +87,11 @@ public class EmbeddedRedisConfig {
 
 **3) 통합 테스트 환경 구성**
 
--   2단계까지만 설정 시, 여러 스프링 컨텍스트 실행할 때, EmbeddedReids 포트 충돌이 날 수 있습니다. 즉, 서로 다른 Property를 가진 테스트 코드가 있는 경우 충돌이 날 수 있습니다. 때문에, 아래와 같이 추가 설정이 필요합니다.
--   startRedis()에서 메모리 할당을 명시했습니다. 이를 안할 시, [윈도우 환경에서는 문제](https://github.com/kstyrc/embedded-redis/issues/77)가 발생합니다.
+-   2단계까지만 설정 시, 여러 스프링 컨텍스트 실행할 때, `Embedded Redis` 포트 충돌이 날 수 있습니다. 즉, 서로 다른 `Property`를 가진 테스트 코드가 있는 경우 충돌이 날 수 있습니다. 때문에, 아래와 같이 추가 설정이 필요합니다.
+-   `startRedis()`에서 메모리 할당을 명시했습니다. 이를 안할 시, [윈도우 환경에서는 문제](https://github.com/kstyrc/embedded-redis/issues/77)가 발생합니다.
 -   그 외 설명은 주석을 확인바랍니다.
 
-```
+``` java
 // ...
 public class EmbeddedRedisConfig {
 
@@ -185,13 +185,13 @@ public class EmbeddedRedisConfig {
 
 ### 문제 상황
 
-테스트 환경에서 Ebmedded Redis가 동작하게 구성했는데, M1에서는 Database가 실행되지 않는 현상이 발생했습니다.
+테스트 환경에서 `Ebmedded Redis`가 동작하게 구성했는데, `M1`에서는 `Database`가 실행되지 않는 현상이 발생했습니다.
 
 ---
 
 ### 원인
 
-Embedded Redis 라이브러리에서 mac\_arm64 용 바이너리가 준비되어 있지 않고 소스 코드에도 MAC\_OS\_X\_arm64가 없는 것이 원인입니다.
+`Embedded Redis` 라이브러리에서 `mac_arm64` 용 바이너리가 준비되어 있지 않고 소스 코드에도 `MAC_OS_X_arm64`가 없는 것이 원인입니다.
 
 ---
 

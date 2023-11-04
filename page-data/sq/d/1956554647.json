@@ -1,1 +1,1 @@
-{"data":{"allMarkdownRemark":{"edges":[{"node":{"frontmatter":{"title":"Embedded Redis 테스트 환경 적용기 (feat. M1-ARM)","categories":"Tech"},"fields":{"slug":"/Embedded-Redis/"}}},{"node":{"frontmatter":{"title":"쉽고 빠르게 나만의 개츠비(Gatsby) 블로그 만들기","categories":"블로그 featured"},"fields":{"slug":"/gatsby-starter-zoomkoding-introduction/"}}}]}}}
+{"data":{"allMarkdownRemark":{"edges":[{"node":{"frontmatter":{"title":"Embedded Redis 테스트 환경 적용기 (feat. M1-ARM)","categories":"Tech"},"fields":{"slug":"/Embedded-Redis/"}}}]}}}

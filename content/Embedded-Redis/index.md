@@ -1,3 +1,12 @@
+---
+emoji: 🧢
+title: Getting Started
+date: '2023-11-04 19:54:00'
+author: 홍혁준
+tags: Embedded-Redis
+categories: Tech
+---
+
 안녕하세요. 현재 데브코스 4기로 활동 중인 모아밤팀 서버 개발자 홍혁준입니다. 
 
 이번 포스팅에서 Embedded Redis에 대해 이야기를 풀어내 보려고 합니다. 감사합니다.
@@ -283,3 +292,6 @@ public class EmbeddedRedisConfig {
 -   [Redis 공식 문서](https://redis.io/docs/reference/arm/)
 -   [기억보단 기록을 - Spring Boot Data Redis 로컬/통합 테스트 환경 구축](https://jojoldu.tistory.com/297)
 -   [ARM MAC M1에서 Embedded Redis 적용](https://velog.io/@hakjong/ARM-Mac-M1-%EC%97%90%EC%84%9C-embedded-redis-%EC%82%AC%EC%9A%A9)
+
+```toc
+```

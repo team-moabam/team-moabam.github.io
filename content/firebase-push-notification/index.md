@@ -1,7 +1,7 @@
 ---
 emoji: 🧑🏻‍💻
-title: Embedded Redis 테스트 환경 적용기 (feat. M1-ARM)
-date: '2023-11-04 19:54:00'
+title: 모아밤의 FCM Push 알림 도입기
+date: '2023-11-07 17:17:00'
 author: 홍혁준
 tags: Embedded-Redis
 categories: Tech

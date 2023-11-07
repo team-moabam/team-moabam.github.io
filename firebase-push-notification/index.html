@@ -300,30 +300,30 @@ implementation 'com.google.firebase:firebase-admin:9.2.0'</code></pre></div>
 <li><code class="language-text">Firebase</code> 앱 내, 프로젝트의 권한을 얻기 위해서는 <code class="language-text">SDK</code> 권한키를 필수로 보유해야 합니다.</li>
 <li>공식문서에서 제공된 방식과 다르게 절대 <code class="language-text">ClassPathResource</code>를 활용했습니다.</li>
 </ul>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">@Slf4j
-@Configuration
-public class FcmConfig {
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FcmConfig</span> <span class="token punctuation">{</span>
 
-    @Bean
-    public FirebaseMessaging firebaseMessaging() {
-        try (InputStream inputStream = new ClassPathResource(FIREBASE_PATH).getInputStream()) {
-            GoogleCredentials credentials = GoogleCredentials.fromStream(inputStream);
-            FirebaseOptions firebaseOptions = FirebaseOptions.builder()
-                .setCredentials(credentials)
-                .build();
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">FirebaseMessaging</span> <span class="token function">firebaseMessaging</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">(</span><span class="token class-name">InputStream</span> inputStream <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ClassPathResource</span><span class="token punctuation">(</span><span class="token constant">FIREBASE_PATH</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token class-name">GoogleCredentials</span> credentials <span class="token operator">=</span> <span class="token class-name">GoogleCredentials</span><span class="token punctuation">.</span><span class="token function">fromStream</span><span class="token punctuation">(</span>inputStream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">FirebaseOptions</span> firebaseOptions <span class="token operator">=</span> <span class="token class-name">FirebaseOptions</span><span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">setCredentials</span><span class="token punctuation">(</span>credentials<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-            if (FirebaseApp.getApps().isEmpty()) {
-                FirebaseApp.initializeApp(firebaseOptions);
-                log.info("======= Firebase init start =======");
-            }
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">FirebaseApp</span><span class="token punctuation">.</span><span class="token function">getApps</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token class-name">FirebaseApp</span><span class="token punctuation">.</span><span class="token function">initializeApp</span><span class="token punctuation">(</span>firebaseOptions<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"======= Firebase init start ======="</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
 
-            return FirebaseMessaging.getInstance();
-        } catch (IOException e) {
-            log.error("======= firebase moabam error =======\n" + e);
-            throw new FcmException(ErrorMessage.FAILED_FCM_INIT);
-        }
-    }
-}</code></pre></div>
+            <span class="token keyword">return</span> <span class="token class-name">FirebaseMessaging</span><span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"======= firebase moabam error =======\n"</span> <span class="token operator">+</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">FcmException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">FAILED_FCM_INIT</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre></div>
 <p><strong>2) 콕 찌르기 알림 기능 구현 코드 중 일부분</strong></p>
 <ul>
 <li>방 참여자들은 다른 참여자들에게 12시간마다 1회의 콕 찌르기 알림을 보낼 수 있다는 요구사항을 지키기 위해</li>
@@ -333,68 +333,68 @@ public class FcmConfig {
 <li>콕 찌르기 알림은 사용자들의 중요한 정보라거나, 보안적으로 문제되는 정보라고 생각하지 않았기 때문에,</li>
 </ul>
 <p><code class="language-text">FirebaseMessaging</code>의 <code class="language-text">sendAsync()</code>를 활용했습니다. 즉, <code class="language-text">Firebase</code> 서버로 비동기 요청을 하여 성능을 챙겼습니다. </p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">@Transactional
-public void sendKnockNotification(MemberTest member, Long targetId, Long roomId) {
-    String knockKey = generateKnockKey(member.memberId(), targetId, roomId);
-    validateConflictKnockNotification(knockKey);
-    validateFcmToken(targetId);
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token annotation punctuation">@Transactional</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sendKnockNotification</span><span class="token punctuation">(</span><span class="token class-name">MemberTest</span> member<span class="token punctuation">,</span> <span class="token class-name">Long</span> targetId<span class="token punctuation">,</span> <span class="token class-name">Long</span> roomId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token class-name">String</span> knockKey <span class="token operator">=</span> <span class="token function">generateKnockKey</span><span class="token punctuation">(</span>member<span class="token punctuation">.</span><span class="token function">memberId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> targetId<span class="token punctuation">,</span> roomId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">validateConflictKnockNotification</span><span class="token punctuation">(</span>knockKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">validateFcmToken</span><span class="token punctuation">(</span>targetId<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    Notification notification = NotificationMapper.toKnockNotificationEntity(member.nickname());
-    sendAsyncFcm(targetId, notification);
-    notificationRepository.saveKnockNotification(knockKey);
-}
+    <span class="token class-name">Notification</span> notification <span class="token operator">=</span> <span class="token class-name">NotificationMapper</span><span class="token punctuation">.</span><span class="token function">toKnockNotificationEntity</span><span class="token punctuation">(</span>member<span class="token punctuation">.</span><span class="token function">nickname</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">sendAsyncFcm</span><span class="token punctuation">(</span>targetId<span class="token punctuation">,</span> notification<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    notificationRepository<span class="token punctuation">.</span><span class="token function">saveKnockNotification</span><span class="token punctuation">(</span>knockKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
-private void sendAsyncFcm(Long fcmTokenKey, Notification notification) {
-    String fcmToken = notificationRepository.findFcmTokenByMemberId(fcmTokenKey);
-    Message message = NotificationMapper.toMessageEntity(notification, fcmToken);
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">sendAsyncFcm</span><span class="token punctuation">(</span><span class="token class-name">Long</span> fcmTokenKey<span class="token punctuation">,</span> <span class="token class-name">Notification</span> notification<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token class-name">String</span> fcmToken <span class="token operator">=</span> notificationRepository<span class="token punctuation">.</span><span class="token function">findFcmTokenByMemberId</span><span class="token punctuation">(</span>fcmTokenKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Message</span> message <span class="token operator">=</span> <span class="token class-name">NotificationMapper</span><span class="token punctuation">.</span><span class="token function">toMessageEntity</span><span class="token punctuation">(</span>notification<span class="token punctuation">,</span> fcmToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    firebaseMessaging.sendAsync(message);
-}
+    firebaseMessaging<span class="token punctuation">.</span><span class="token function">sendAsync</span><span class="token punctuation">(</span>message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
 
-private void validateConflictKnockNotification(String knockKey) {
-    if (notificationRepository.existsByKey(knockKey)) {
-        throw new ConflictException(ErrorMessage.CONFLICT_KNOCK);
-    }
-}
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">validateConflictKnockNotification</span><span class="token punctuation">(</span><span class="token class-name">String</span> knockKey<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>notificationRepository<span class="token punctuation">.</span><span class="token function">existsByKey</span><span class="token punctuation">(</span>knockKey<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">ConflictException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">CONFLICT_KNOCK</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
-private void validateFcmToken(Long memberId) {
-    if (!notificationRepository.existsFcmTokenByMemberId(memberId)) {
-        throw new NotFoundException(ErrorMessage.NOT_FOUND_FCM_TOKEN);
-    }
-}
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">validateFcmToken</span><span class="token punctuation">(</span><span class="token class-name">Long</span> memberId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>notificationRepository<span class="token punctuation">.</span><span class="token function">existsFcmTokenByMemberId</span><span class="token punctuation">(</span>memberId<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NotFoundException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">NOT_FOUND_FCM_TOKEN</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
-private String generateKnockKey(Long memberId, Long targetId, Long roomId) {
-    return requireNonNull(roomId) + UNDER_BAR + requireNonNull(memberId) + TO + requireNonNull(targetId);
-}</code></pre></div>
+<span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">generateKnockKey</span><span class="token punctuation">(</span><span class="token class-name">Long</span> memberId<span class="token punctuation">,</span> <span class="token class-name">Long</span> targetId<span class="token punctuation">,</span> <span class="token class-name">Long</span> roomId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token function">requireNonNull</span><span class="token punctuation">(</span>roomId<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token constant">UNDER_BAR</span> <span class="token operator">+</span> <span class="token function">requireNonNull</span><span class="token punctuation">(</span>memberId<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token constant">TO</span> <span class="token operator">+</span> <span class="token function">requireNonNull</span><span class="token punctuation">(</span>targetId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre></div>
 <p><strong>3) 인증 타임에 따른 알림 중 일부분</strong></p>
 <ul>
 <li>방 내의 루틴 인증 시작 타임이 된다면 방 참여자들에게 알림이 간다. 라는 요구사항을 지키기 위해 스케줄러를 활용했습니다.</li>
 <li>성능을 위해 병렬 스트림을 활용했습니다.</li>
 </ul>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">/**
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token comment">/**
  * CRON_CERTIFY_TIME_EXPRESSION : "0 50 * * * *";
  * ONE : 1
  * HOURS_IN_A_DAY : 24
- */
-@Scheduled(cron = CRON_CERTIFY_TIME_EXPRESSION)
-public void sendCertificationTimeNotification() {
-    int certificationTime = (LocalDateTime.now().getHour() + ONE) % HOURS_IN_A_DAY;
-    List&lt;Participant> participants = participantSearchRepository.findAllByRoomCertifyTime(certificationTime);
+ */</span>
+<span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>cron <span class="token operator">=</span> <span class="token constant">CRON_CERTIFY_TIME_EXPRESSION</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sendCertificationTimeNotification</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">int</span> certificationTime <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token class-name">LocalDateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getHour</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token constant">ONE</span><span class="token punctuation">)</span> <span class="token operator">%</span> <span class="token constant">HOURS_IN_A_DAY</span><span class="token punctuation">;</span>
+    <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Participant</span><span class="token punctuation">></span></span> participants <span class="token operator">=</span> participantSearchRepository<span class="token punctuation">.</span><span class="token function">findAllByRoomCertifyTime</span><span class="token punctuation">(</span>certificationTime<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    participants.parallelStream().forEach(participant -> {
-        String roomTitle = participant.getRoom().getTitle();
-        Notification notification = NotificationMapper.toCertifyAuthNotificationEntity(roomTitle);
-        sendAsyncFcm(participant.getMemberId(), notification);
-    });
-}
+    participants<span class="token punctuation">.</span><span class="token function">parallelStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>participant <span class="token operator">-></span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> roomTitle <span class="token operator">=</span> participant<span class="token punctuation">.</span><span class="token function">getRoom</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTitle</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Notification</span> notification <span class="token operator">=</span> <span class="token class-name">NotificationMapper</span><span class="token punctuation">.</span><span class="token function">toCertifyAuthNotificationEntity</span><span class="token punctuation">(</span>roomTitle<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">sendAsyncFcm</span><span class="token punctuation">(</span>participant<span class="token punctuation">.</span><span class="token function">getMemberId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> notification<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 
-private void sendAsyncFcm(Long fcmTokenKey, Notification notification) {
-    String fcmToken = notificationRepository.findFcmTokenByMemberId(fcmTokenKey);
-    Message message = NotificationMapper.toMessageEntity(notification, fcmToken);
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">sendAsyncFcm</span><span class="token punctuation">(</span><span class="token class-name">Long</span> fcmTokenKey<span class="token punctuation">,</span> <span class="token class-name">Notification</span> notification<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token class-name">String</span> fcmToken <span class="token operator">=</span> notificationRepository<span class="token punctuation">.</span><span class="token function">findFcmTokenByMemberId</span><span class="token punctuation">(</span>fcmTokenKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Message</span> message <span class="token operator">=</span> <span class="token class-name">NotificationMapper</span><span class="token punctuation">.</span><span class="token function">toMessageEntity</span><span class="token punctuation">(</span>notification<span class="token punctuation">,</span> fcmToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    firebaseMessaging.sendAsync(message);
-}</code></pre></div>
+    firebaseMessaging<span class="token punctuation">.</span><span class="token function">sendAsync</span><span class="token punctuation">(</span>message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre></div>
 <hr>
 <h2 id="병렬-스트림과-반복문-성능-비교" style="position:relative;"><a href="#%EB%B3%91%EB%A0%AC-%EC%8A%A4%ED%8A%B8%EB%A6%BC%EA%B3%BC-%EB%B0%98%EB%B3%B5%EB%AC%B8-%EC%84%B1%EB%8A%A5-%EB%B9%84%EA%B5%90" aria-label="병렬 스트림과 반복문 성능 비교 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>병렬 스트림과 반복문 성능 비교</h2>
 <h3 id="배경" style="position:relative;"><a href="#%EB%B0%B0%EA%B2%BD" aria-label="배경 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>배경</h3>

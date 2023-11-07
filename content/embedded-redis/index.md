@@ -287,6 +287,7 @@ public class EmbeddedRedisConfig {
 **실행 결과**
 
 ![redis3.png](redis3.png)
+![redis4.png](redis4.png)
 
 ---
 

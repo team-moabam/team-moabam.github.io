@@ -165,7 +165,7 @@ Firebase 연동 준비는 제가 참고한 [React + FCM 구현하기](https://ve
 -   `Firebase` 앱 내, 프로젝트의 권한을 얻기 위해서는 `SDK` 권한키를 필수로 보유해야 합니다.
 -   공식문서에서 제공된 방식과 다르게 절대 `ClassPathResource`를 활용했습니다.
 
-```
+``` java
 @Slf4j
 @Configuration
 public class FcmConfig {
@@ -199,7 +199,7 @@ public class FcmConfig {
 -   콕 찌르기 알림은 사용자들의 중요한 정보라거나, 보안적으로 문제되는 정보라고 생각하지 않았기 때문에, 
 `FirebaseMessaging`의 `sendAsync()`를 활용했습니다. 즉, `Firebase` 서버로 비동기 요청을 하여 성능을 챙겼습니다. 
 
-```
+``` java
 @Transactional
 public void sendKnockNotification(MemberTest member, Long targetId, Long roomId) {
     String knockKey = generateKnockKey(member.memberId(), targetId, roomId);
@@ -241,7 +241,7 @@ private String generateKnockKey(Long memberId, Long targetId, Long roomId) {
 -   방 내의 루틴 인증 시작 타임이 된다면 방 참여자들에게 알림이 간다. 라는 요구사항을 지키기 위해 스케줄러를 활용했습니다.
 -   성능을 위해 병렬 스트림을 활용했습니다.
 
-```
+``` java
 /**
  * CRON_CERTIFY_TIME_EXPRESSION : "0 50 * * * *";
  * ONE : 1

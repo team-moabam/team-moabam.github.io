@@ -284,11 +284,9 @@ private void sendAsyncFcm(Long fcmTokenKey, Notification notification) {
 
 ### 성능 테스트
 
-**1) `Firebase`의 `sendAsync` 요청 시간 : 5ms**
+> 메서드 내부에서 Thread.sleep(5)를 선언하여, 5ms의 지연시간을 가지고 테스트 하였습니다.
 
-![fcm7.png](fcm7.png)
-
-**2) 임의 리스트 생성 후 테스트 성능 : 100\_000 (십만)**
+**1) 임의 리스트 생성 후 테스트 성능 : 100\_000 (십만)**
 
 -   일반 반복문이 너무 오래 걸려 중단했습니다. 그 정도로 큰 차이가 났습니다.
 

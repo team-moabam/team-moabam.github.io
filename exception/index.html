@@ -161,9 +161,8 @@
 <p><strong>DefaultHandlerExceptionResolver 동작</strong></p>
 <ul>
 <li>스프링 내부 예외인 지 검사 후 맞다면 예외를 처리합니다.</li>
-<li>없다면 적합한 ExceptionResolver가 없어서 예외가 서블릿까지</li>
+<li>없다면 적합한 ExceptionResolver가 없어서 예외가 서블릿까지 전달되고 서블릿은 스프링 부트가 진행한 자동 설정에 맞게 BasicErrorController로 요청을 다시 전달합니다.</li>
 </ul>
-<p>전달되고 서블릿은 스프링 부트가 진행한 자동 설정에 맞게 BasicErrorController로 요청을 다시 전달합니다.</p>
 <hr>
 <h2 id="요청-흐름" style="position:relative;"><a href="#%EC%9A%94%EC%B2%AD-%ED%9D%90%EB%A6%84" aria-label="요청 흐름 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>요청 흐름</h2>
 <h3 id="기본-요청-흐름" style="position:relative;"><a href="#%EA%B8%B0%EB%B3%B8-%EC%9A%94%EC%B2%AD-%ED%9D%90%EB%A6%84" aria-label="기본 요청 흐름 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>기본 요청 흐름</h3>
@@ -173,10 +172,9 @@
 판단하고 예외 처리를 진행합니다.</p>
 <div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">Controller(Error!) -> Interceptor -> Servlet(Dispatcher Servlet) -> Filter -> WAS(Tomcat) 
 -> Filter Servlet(Dispatcher Servlet) -> Interceptor -> Controller(BasicErrorController)</code></pre></div>
-<p>이처럼 기본적인 예외 처리 방식은 아래와 같이 결국 <code class="language-text">Exception Controller</code>를
-한 번 더 호출하게 됩니다. 즉, 필터와 인터셉터도 다시 호출되는
-것이죠. 정리하면, 이는 요청이 2번 생기는 것이 아닌, 1번의 요청이 2번 전달되는
-것이게 되므로 이를 제어할 수 있도록 별도의 설정이 필요해 보입니다.</p>
+<p>이처럼 기본적인 예외 처리 방식은 아래와 같이 결국 <code class="language-text">Exception Controller</code>를 한 번 더 호출하게 됩니다.</p>
+<p>즉, 필터와 인터셉터도 다시 호출되는 것이죠. 정리하면, 이는 요청이 2번 생기는 것이 아닌, 1번의 요청이 2번 전달되는
+것이게 되므로 이를 제어할 수 있도록 별도의 설정이 필요해보입니다.</p>
 <hr>
 <h2 id="해결하기" style="position:relative;"><a href="#%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0" aria-label="해결하기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>해결하기</h2>
 <h3 id="try-catch" style="position:relative;"><a href="#try-catch" aria-label="try catch permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>try-catch</h3>
@@ -184,26 +182,20 @@
 <code class="language-text">try-catch</code> 문을 붙이는 것은 매우 비효율적입니다.</p>
 <br/>
 <h3 id="responsestatus" style="position:relative;"><a href="#responsestatus" aria-label="responsestatus permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>@ResponseStatus</h3>
-<p>@ResponseStatus는 HTTP Status를 변경하도록 도와주는
-어노테이션이지만, BasicErrorController에 의한 응답입니다.
-즉, @ResponseStatus을 처리하는 ResponseStatusExceptionResolver는
+<p>@ResponseStatus는 HTTP 상태를 변경하도록 도와주는 어노테이션이지만, BasicErrorController에 의한 응답입니다.</p>
+<p>즉, @ResponseStatus을 처리하는 ResponseStatusExceptionResolver는
 WAS까지 예외를 전달시키기 때문에 1번의 요청이 2번 전달됩니다.</p>
 <br/>
 <h3 id="responsestatusexception" style="position:relative;"><a href="#responsestatusexception" aria-label="responsestatusexception permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>ResponseStatusException</h3>
-<p>ResponseStatusException은 Spring5 버전부터 제공하는 @ResponseStatus의 대안입니다.</p>
-<p>ResponseStatusException은 Http Status와 함께 선택적으로
-<code class="language-text">reason/cause</code>를 추가할 수 있을 뿐만 아니라, 언체크 예외도
-상속받고 있어서 명시적으로 예외 처리를 하지 않아도 됩니다. 즉, Http Status를
-직접 설정해 예외 클래스와 결합도를 낮추고 기본적인 예외 처리를 빠르게 적용하여
+<p>ResponseStatusException은 Spring5 버전부터 제공하는 @ResponseStatus의 대안으로 HTTP 상태와
+함께 선택적으로 <code class="language-text">reason/cause</code>를 추가할 수 있을 뿐만 아니라, 언체크 예외도 상속받고 있어서 명시적으로 예외 처리를 하지 않아도 됩니다.</p>
+<p>즉, HTTP 상태를 직접 설정해 예외 클래스와 결합도를 낮추고 기본적인 예외 처리를 빠르게 적용하여
 손쉽게 프로토타이핑할 수 있습니다. 하지만 여전히 ResponseStatusExceptionResolver가 예외를 처리합니다.</p>
 <br />
 <h3 id="restcontrolleradvice와-exceptionhandler" style="position:relative;"><a href="#restcontrolleradvice%EC%99%80-exceptionhandler" aria-label="restcontrolleradvice와 exceptionhandler permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>@RestControllerAdvice와 @ExceptionHandler</h3>
-<p>@ExceptionHandler 어노테이션은 컨트롤러 클래스 혹은
-@RestControllerAdvice가 있는 클래스의 메소드에 해당
-어노테이션을 추가하고 예외 클래스를 속성으로 받아
-손쉽게 예외 처리를 할 수 있도록 도와줍니다.
-즉, @RestControllerAdvice는 @ExceptionHandler를
-전역적으로 제공할 수 있도록 스프링에서 제공하는 어노테이션입니다.</p>
+<p>@ExceptionHandler 어노테이션은 컨트롤러 클래스 혹은 @RestControllerAdvice가 있는 클래스의 메소드에 해당
+어노테이션을 추가하고 예외 클래스를 속성으로 받아 손쉽게 예외 처리를 할 수 있도록 도와줍니다.</p>
+<p>즉, @RestControllerAdvice는 @ExceptionHandler를 전역적으로 제공할 수 있도록 스프링에서 제공하는 어노테이션입니다.</p>
 <p><span
       class="gatsby-resp-image-wrapper"
       style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
@@ -228,12 +220,11 @@ WAS까지 예외를 전달시키기 때문에 1번의 요청이 2번 전달됩�
         decoding="async"
       />
     </span></p>
-<p>또한 위에서 말했듯 @RestControllerAdvice와
-@ExceptionHandler는 스프링에서 예외 처리 공통 관심사(Cross-Cutting Concerns)를
-메인 로직으로부터 분리해 다양한 예외 처리 방식을 고안한 방식인
-HandlerExceptionResolver의 구현체 중 ExceptionHandlerExceptionResolver로 처리하게 됩니다.</p>
-<p>ExceptionHandlerExceptionResolver는 발생한 예외를 잡고
-HTTP 상태나 응답 메시지를 설정하기 때문에, WAS 입장에선 해당 요청이
+<blockquote>
+<p>HandlerExceptionResolver : 스프링에서 예외 처리 공통 관심사(Cross-Cutting Concerns)를 메인 로직으로부터 분리해 다양한 예외 처리 방식을 고안한 방식</p>
+</blockquote>
+<p>사전 지식에서 봤듯 @ExceptionHandler는 HandlerExceptionResolver의 구현체 중 ExceptionHandlerExceptionResolver로 처리하게 됩니다.</p>
+<p>ExceptionHandlerExceptionResolver는 발생한 예외를 잡고 HTTP 상태나 응답 메시지를 설정하기 때문에, WAS 입장에선 해당 요청이
 정상적인 응답인 것으로 인식되어 위와 다르게 WAS의 에러 전달이 진행되지 않습니다.</p>
 <p>이러한 이유로 모아밤에서는 @RestControllerAdvice와
 @ExceptionHandler 예외 처리 방식을 선택하게 되었습니다. 감사합니다.</p>

@@ -242,7 +242,7 @@ Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 
 
 -   대기열은 어떤 요청이든 해당 쿠폰이 발급 가능 날짜라면, 대기열에 넣도록 합니다.
 
-```java
+``` java
 public void registerQueue(Long memberId, String couponName) {
     double registerTime = System.currentTimeMillis();
     validateRegisterQueue(couponName);
@@ -265,7 +265,7 @@ private void validateRegisterQueue(String couponName) {
 -   대기열에서 꺼내온 사용자들이 재고 내에 요청한 사용자들인지 ZRANK 명령어를 통해 확인합니다.
 -   발급 결과를 각 사용자에게 FCM 알림을 보내서, 실시간으로 알립니다.
 
-```java
+``` java
 @Scheduled(fixedDelay = 1000)
 public void issue() {
     LocalDate now = clockHolder.date();

@@ -1,0 +1,553 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="ie=edge"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><meta name="generator" content="Gatsby 4.25.7"/><meta data-react-helmet="true" property="og:title" content="모아밤의 실시간 선착순 쿠폰 이벤트 도입기"/><meta data-react-helmet="true" property="og:site_title" content="모아밤의 실시간 선착순 쿠폰 이벤트 도입기"/><meta data-react-helmet="true" name="description" content="안녕하세요. 현재 데브코스 4기로 활동 중인 모아밤팀 서버 개발자 홍혁준입니다. 이번 포스팅에서 실시간 선착순 시스템에 대해 이야기를 풀어내 보려고 합니다. 감사합니다. 배경 저희 모아밤 서비스는 사용자들을 위해 쿠폰 이벤트를 도입하게 되었습니다.
+현재 생각 중인 쿠폰은 선착순으로 진행하는 이벤트로 사용자들이 다양한 종류의 N개 쿠폰을 선착순으로 지급 받도록 할 계획입니다. 선착순 쿠폰 발급 이벤트는 짧은 시간에 많은 트래픽이 발생합니다.
+중요한 점은 서버가 다운되지 않고 수량 제한에 맞춰 정확하게 쿠폰이 발급되어야 합니다.
+이런 사항들을 모아밤에서는 어떻게 해결했는지 살펴봅시다. 요구사항 사용자들은 정해진 재고에 따라 선착순으로 쿠폰을 발급 받을 수 있다. 동일한 이벤트에서 동일 사용자가 쿠폰을 중복하여 발급 받을 수 없다. 쿠폰은 발급 후 쿠폰함 혹은 결제창에서 1회 사용 가능하다. 고민사항 N번의 선착순일 때, 정확하게 N번 발급해줄 수 있어야 합니다. 쿠폰 발급 요청을 여러…"/><meta data-react-helmet="true" property="og:description" content="안녕하세요. 현재 데브코스 4기로 활동 중인 모아밤팀 서버 개발자 홍혁준입니다. 이번 포스팅에서 실시간 선착순 시스템에 대해 이야기를 풀어내 보려고 합니다. 감사합니다. 배경 저희 모아밤 서비스는 사용자들을 위해 쿠폰 이벤트를 도입하게 되었습니다.
+현재 생각 중인 쿠폰은 선착순으로 진행하는 이벤트로 사용자들이 다양한 종류의 N개 쿠폰을 선착순으로 지급 받도록 할 계획입니다. 선착순 쿠폰 발급 이벤트는 짧은 시간에 많은 트래픽이 발생합니다.
+중요한 점은 서버가 다운되지 않고 수량 제한에 맞춰 정확하게 쿠폰이 발급되어야 합니다.
+이런 사항들을 모아밤에서는 어떻게 해결했는지 살펴봅시다. 요구사항 사용자들은 정해진 재고에 따라 선착순으로 쿠폰을 발급 받을 수 있다. 동일한 이벤트에서 동일 사용자가 쿠폰을 중복하여 발급 받을 수 없다. 쿠폰은 발급 후 쿠폰함 혹은 결제창에서 1회 사용 가능하다. 고민사항 N번의 선착순일 때, 정확하게 N번 발급해줄 수 있어야 합니다. 쿠폰 발급 요청을 여러…"/><meta data-react-helmet="true" property="og:author" content="모아밤"/><meta data-react-helmet="true" property="og:image" content="/og-image.png"/><meta data-react-helmet="true" property="og:type" content="website"/><style data-href="/styles.403d7a8a431a9dbd54c6.css" data-identity="gatsby-global-css">@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:100;src:local("Montserrat Thin "),local("Montserrat-Thin"),url(/static/montserrat-latin-100-8d7d79679b70dbe27172b6460e7a7910.woff2) format("woff2"),url(/static/montserrat-latin-100-ec38980a9e0119a379e2a9b3dbb1901a.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:100;src:local("Montserrat Thin italic"),local("Montserrat-Thinitalic"),url(/static/montserrat-latin-100italic-e279051046ba1286706adc886cf1c96b.woff2) format("woff2"),url(/static/montserrat-latin-100italic-3b325a3173c8207435cd1b76e19bf501.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:200;src:local("Montserrat Extra Light "),local("Montserrat-Extra Light"),url(/static/montserrat-latin-200-9d266fbbfa6cab7009bd56003b1eeb67.woff2) format("woff2"),url(/static/montserrat-latin-200-2d8ba08717110d27122e54c34b8a5798.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:200;src:local("Montserrat Extra Light italic"),local("Montserrat-Extra Lightitalic"),url(/static/montserrat-latin-200italic-6e5b3756583bb2263eb062eae992735e.woff2) format("woff2"),url(/static/montserrat-latin-200italic-a0d6f343e4b536c582926255367a57da.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:300;src:local("Montserrat Light "),local("Montserrat-Light"),url(/static/montserrat-latin-300-00b3e893aab5a8fd632d6342eb72551a.woff2) format("woff2"),url(/static/montserrat-latin-300-ea303695ceab35f17e7d062f30e0173b.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:300;src:local("Montserrat Light italic"),local("Montserrat-Lightitalic"),url(/static/montserrat-latin-300italic-56f34ea368f6aedf89583d444bbcb227.woff2) format("woff2"),url(/static/montserrat-latin-300italic-54b0bf2c8c4c12ffafd803be2466a790.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:400;src:local("Montserrat Regular "),local("Montserrat-Regular"),url(/static/montserrat-latin-400-b71748ae4f80ec8c014def4c5fa8688b.woff2) format("woff2"),url(/static/montserrat-latin-400-0659a9f4e90db5cf51b50d005bff1e41.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:400;src:local("Montserrat Regular italic"),local("Montserrat-Regularitalic"),url(/static/montserrat-latin-400italic-6eed6b4cbb809c6efc7aa7ddad6dbe3e.woff2) format("woff2"),url(/static/montserrat-latin-400italic-7583622cfde30ae49086d18447ab28e7.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:500;src:local("Montserrat Medium "),local("Montserrat-Medium"),url(/static/montserrat-latin-500-091b209546e16313fd4f4fc36090c757.woff2) format("woff2"),url(/static/montserrat-latin-500-edd311588712a96bbf435fad264fff62.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:500;src:local("Montserrat Medium italic"),local("Montserrat-Mediumitalic"),url(/static/montserrat-latin-500italic-c90ced68b46050061d1a41842d6dfb43.woff2) format("woff2"),url(/static/montserrat-latin-500italic-5146cbfe02b1deea5dffea27a5f2f998.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:600;src:local("Montserrat SemiBold "),local("Montserrat-SemiBold"),url(/static/montserrat-latin-600-0480d2f8a71f38db8633b84d8722e0c2.woff2) format("woff2"),url(/static/montserrat-latin-600-b77863a375260a05dd13f86a1cee598f.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:600;src:local("Montserrat SemiBold italic"),local("Montserrat-SemiBolditalic"),url(/static/montserrat-latin-600italic-cf46ffb11f3a60d7df0567f8851a1d00.woff2) format("woff2"),url(/static/montserrat-latin-600italic-c4fcfeeb057724724097167e57bd7801.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:700;src:local("Montserrat Bold "),local("Montserrat-Bold"),url(/static/montserrat-latin-700-7dbcc8a5ea2289d83f657c25b4be6193.woff2) format("woff2"),url(/static/montserrat-latin-700-99271a835e1cae8c76ef8bba99a8cc4e.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:700;src:local("Montserrat Bold italic"),local("Montserrat-Bolditalic"),url(/static/montserrat-latin-700italic-c41ad6bdb4bd504a843d546d0a47958d.woff2) format("woff2"),url(/static/montserrat-latin-700italic-6779372f04095051c62ed36bc1dcc142.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:800;src:local("Montserrat ExtraBold "),local("Montserrat-ExtraBold"),url(/static/montserrat-latin-800-db9a3e0ba7eaea32e5f55328ace6cf23.woff2) format("woff2"),url(/static/montserrat-latin-800-4e3c615967a2360f5db87d2f0fd2456f.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:800;src:local("Montserrat ExtraBold italic"),local("Montserrat-ExtraBolditalic"),url(/static/montserrat-latin-800italic-bf45bfa14805969eda318973947bc42b.woff2) format("woff2"),url(/static/montserrat-latin-800italic-fe82abb0bcede51bf724254878e0c374.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:900;src:local("Montserrat Black "),local("Montserrat-Black"),url(/static/montserrat-latin-900-e66c7edc609e24bacbb705175669d814.woff2) format("woff2"),url(/static/montserrat-latin-900-8211f418baeb8ec880b80ba3c682f957.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:900;src:local("Montserrat Black italic"),local("Montserrat-Blackitalic"),url(/static/montserrat-latin-900italic-4454c775e48152c1a72510ceed3603e2.woff2) format("woff2"),url(/static/montserrat-latin-900italic-efcaa0f6a82ee0640b83a0916e6e8d68.woff) format("woff")}.search-input-wrapper{align-items:center;display:none;margin-top:3px;width:180px}@media(min-width:768px){.search-input-wrapper{display:flex}}.search-icon{color:var(--primary-text-color);margin-right:2px}.search-input{height:100%;width:100%}.search-input .MuiAutocomplete-inputRoot{padding-right:0!important}.search-input .MuiInputBase-input{color:var(--primary-text-color)!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:16px;font-weight:500;padding-bottom:2px!important}.search-input .MuiInput-underline:before{border-bottom-color:var(--primary-text-color);border-bottom-width:1px}.search-input .MuiInput-underline:after{border-bottom-color:var(--primary-text-color)}.page-header-wrapper{display:flex;height:60px;justify-content:center;width:100%}.page-header-wrapper .page-header{align-items:center;display:flex;justify-content:space-between;max-width:720px;width:100%}.page-header-wrapper .page-header .link{color:var(--primary-text-color);font-size:17px;font-weight:700}@media(min-width:768px){.page-header-wrapper .page-header .link{font-size:20px;font-weight:700}}.page-header-wrapper .page-header .trailing-section{align-items:center;display:flex}.page-header-wrapper .page-header .trailing-section .link{margin-right:10px}@media(min-width:768px){.page-header-wrapper .page-header .trailing-section .link{margin-right:20px}}.page-footer-wrapper{align-items:center;display:flex;height:62px;justify-content:center;margin-top:auto;width:100%}.page-footer-wrapper .page-footer{max-width:720px;text-align:center;width:100%}.page-footer-wrapper .page-footer .link{color:var(--primary-text-color);font-size:20px;font-weight:700;margin-right:20px}.page-footer-wrapper .page-footer a{color:#3a95ff}.dark-mode-button-wrapper{align-items:center;bottom:20px;display:flex;justify-content:center;position:fixed;right:20px}.dark-mode-button{-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px);background-color:#363f47!important;border-radius:50px;box-shadow:0 5px 25px rgba(0,0,0,.12);cursor:pointer;height:50px;width:50px;z-index:3}.dark-mode-icon{color:#fff}a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{border:0;font-size:100%;font:inherit;margin:0;padding:0;vertical-align:baseline}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:after,blockquote:before,q:after,q:before{content:"";content:none}table{border-collapse:collapse;border-spacing:0}a{outline:none;text-decoration:none}html{--background-color:#fff;--primary-text-color:#000;--secondary-text-color:#9e9e9e;--content-text-color:#37352f;--button-background-color:#f3f3f4;--button-text-color:#363f47;--tab-text-color:#6e6d7a;--tab-hover-text-color:#0d0c22;--tab-selected-background-color:rgba(13,12,34,.05);--bio-link-icon-color:rgba(0,0,0,.54);--about-link-icon-color:#a8a8a8;--chip-background-color:#f3f3f4;--link-text-color:rgba(55,53,47,.7);--post-card-border-color:rgba(0,0,0,.12);--markdown-table-even-cell-background-color:#f6f8fa;--markdown-table-border-color:#dfe2e5;--markdown-blockquote-border-color:#dfe2e5;--markdown-border-color:#e1e4e8}html[data-theme=dark]{--background-color:#232326;--primary-text-color:#e6e6e6;--secondary-text-color:#768390;--content-text-color:#e6e6e6;--button-background-color:#444c56;--button-text-color:#363f47;--tab-text-color:#768390;--tab-hover-text-color:#acbac7;--tab-selected-background-color:#373e47;--chip-background-color:#323a42;--bio-link-icon-color:#e6e6e6;--about-link-icon-color:#a8a8a8;--link-text-color:#90b0ec;--post-card-border-color:#363f47;--markdown-table-even-cell-background-color:#2d333b;--markdown-table-border-color:#444c56;--markdown-blockquote-border-color:#4f5864;--markdown-border-color:#e1e4e8}*{-webkit-appearance:none;appearance:none;box-sizing:border-box}html{font-size:14px;height:100%;overflow-y:scroll;width:100%}body{background-color:var(--background-color)!important}a{color:var(--link-text-color)}.page-wrapper{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;color:var(--primary-text-color);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;justify-content:center;min-height:100vh;padding-left:15px;padding-right:15px;word-break:keep-all}.page-wrapper,.page-wrapper .page-content{align-items:center;display:flex;flex-direction:column;width:100%}.page-wrapper .page-content{max-width:720px}.icon{color:var(--about-link-icon-color);font-size:20px}.social-links .icon{color:var(--bio-link-icon-color);font-size:30px}@-webkit-keyframes blinking-cursor{0%{opacity:0}50%{opacity:1}to{opacity:0}}@keyframes blinking-cursor{0%{opacity:0}50%{opacity:1}to{opacity:0}}.bio{color:var(--primary-text-color);display:flex;flex-direction:column;justify-content:space-between;margin-bottom:120px;margin-top:120px;width:100%}@media(min-width:768px){.bio{align-items:center;flex-direction:row}}.bio .introduction{display:flex;flex-direction:column;word-break:keep-all}.bio .introduction .react-rotating-text-cursor{-webkit-animation:blinking-cursor .8s cubic-bezier(.68,.01,.01,.99) 0s infinite;animation:blinking-cursor .8s cubic-bezier(.68,.01,.01,.99) 0s infinite}.bio .introduction strong{display:inline-block;font-weight:600}.bio .introduction.korean{font-size:32px;font-weight:100;line-height:1.2}.bio .introduction.korean .title .react-rotating-text-cursor{font-size:35px;line-height:35px}@media(min-width:768px){.bio .introduction.korean{font-size:40px}.bio .introduction.korean .title .react-rotating-text-cursor{font-size:45px;line-height:45px}}.bio .introduction.english{font-family:montserrat;font-size:25px;line-height:1.2}@media(min-width:768px){.bio .introduction.english{font-size:45px}}.bio .introduction.english .name{font-size:35px;font-weight:600}.bio .introduction.english .job{font-size:35px}.bio .introduction.english .description{font-size:20px;font-weight:200;margin-top:8px}.bio .introduction.english .social-links{display:flex;margin-top:20px}.bio .thumbnail-wrapper{display:none}@media(min-width:768px){.bio .thumbnail-wrapper{display:block}}.section-header-wrapper{display:flex;justify-content:center;margin-bottom:32px;width:100%}.section-header-wrapper .section-header{border-bottom:4px solid var(--primary-text-color);color:var(--primary-text-color);font-size:30px;font-weight:700;padding-bottom:5px}.timestamp-section{align-items:center;display:flex;flex-direction:column;justify-content:center;margin-bottom:50px;width:100%;word-break:keep-all}.timestamp-section .body{padding:0 10px;width:100%}.timestamp-section .body .timestamp{border-left:2px solid #bdbdbd;display:flex;font-size:18px;font-weight:400;justify-items:center;margin-left:5px;padding:10px 0;width:100%}.timestamp-section .body .timestamp:first-child{padding-top:7px}.timestamp-section .body .timestamp:last-child{padding-bottom:7px}.timestamp-section .body .timestamp:before{align-self:center;background-color:var(--background-color);border:2px solid #828282;border-radius:10px;content:"";height:10px;left:-1px;position:relative;-webkit-transform:translatex(-50%);transform:translatex(-50%);width:10px}.timestamp-section .body .timestamp .date{align-self:center;color:#828282;margin-left:5px;margin-right:5px;min-width:115px;width:115px}@media(min-width:768px){.timestamp-section .body .timestamp .date{min-width:200px;width:200px}}.timestamp-section .body .timestamp .activity{line-height:23px;width:100%}.project-section{align-items:center;justify-content:center}.project-section,.project-section .project{display:flex;flex-direction:column;width:100%}.project-section .project{margin-bottom:30px;padding:15px}.project-section .project .head{font-size:20px;font-weight:700;line-height:30px;margin-bottom:10px}.project-section .project .body{display:flex;flex-direction:column;width:100%}.project-section .project .body .thumbnail{margin-bottom:10px;width:100%}.project-section .project .body .tech-stack{display:flex;margin-bottom:10px}.project-section .project .body .tech-stack .tech{background-color:var(--chip-background-color);border-radius:10px;font-size:15px;font-weight:500;margin-right:5px;padding:5px 7px}.project-section .project .body .description{font-size:16px;font-weight:400;line-height:1.4}@media(min-width:768px){.project-section .project .body{flex-direction:column}.project-section .project .body .content{margin-top:0}}.post-header{border-bottom:1px solid var(--post-card-border-color);display:flex;flex-direction:column;justify-content:center;margin-bottom:40px;margin-top:20px;padding-bottom:10px;width:100%;word-break:keep-all}.post-header .emoji{font-size:78px;margin-bottom:20px}.post-header .categories{margin-bottom:5px}.post-header .categories .category{color:var(--primary-text-color);font-weight:600;margin-right:4px}.post-header .categories .category:hover{text-decoration:underline}.post-header .title{color:var(--primary-text-color);font-size:32px;font-weight:600;line-height:1.3;margin-bottom:6px}.post-header .info{color:var(--secondary-text-color);display:flex;flex-wrap:wrap;font-size:16px;font-weight:500;line-height:1.5;width:100%}.post-header .info .author{margin-right:4px}.post-header .info strong{color:var(--primary-text-color);font-weight:600}.post-navigator{-webkit-column-gap:1.4%;column-gap:1.4%;display:grid;grid-template-columns:49.3% 49.3%;width:100%}.post-navigator .post-card{border:1px solid var(--post-card-border-color);border-radius:6px;color:var(--primary-text-color);cursor:pointer;display:flex;flex-direction:column;padding:15px;transition:-webkit-transform .2s;transition:transform .2s;transition:transform .2s,-webkit-transform .2s;width:100%}.post-navigator .post-card:hover .title{text-decoration:underline}.post-navigator .post-card.prev{margin-right:auto}.post-navigator .post-card.next{margin-left:auto}.post-navigator .post-card .direction{color:gray;font-size:14px;font-weight:500;margin-bottom:5px}.post-navigator .post-card .title{font-size:16px;font-weight:600;line-height:1.4;margin-bottom:7px}.markdown .octicon{fill:currentColor;display:inline-block;vertical-align:text-bottom}.markdown .anchor{float:left;line-height:1;margin-left:-20px;padding-right:4px}.markdown .anchor:focus{outline:none}.markdown h1 .octicon-link,.markdown h2 .octicon-link,.markdown h3 .octicon-link,.markdown h4 .octicon-link,.markdown h5 .octicon-link,.markdown h6 .octicon-link{color:#1b1f23;vertical-align:middle;visibility:hidden}.markdown h1:hover .anchor,.markdown h2:hover .anchor,.markdown h3:hover .anchor,.markdown h4:hover .anchor,.markdown h5:hover .anchor,.markdown h6:hover .anchor{text-decoration:none}.markdown h1:hover .anchor .octicon-link,.markdown h2:hover .anchor .octicon-link,.markdown h3:hover .anchor .octicon-link,.markdown h4:hover .anchor .octicon-link,.markdown h5:hover .anchor .octicon-link,.markdown h6:hover .anchor .octicon-link{visibility:visible}.markdown h1:hover .anchor .octicon-link:before,.markdown h2:hover .anchor .octicon-link:before,.markdown h3:hover .anchor .octicon-link:before,.markdown h4:hover .anchor .octicon-link:before,.markdown h5:hover .anchor .octicon-link:before,.markdown h6:hover .anchor .octicon-link:before{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' aria-hidden='true' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z'/%3E%3C/svg%3E");content:" ";display:inline-block;height:16px;width:16px}.markdown{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;word-wrap:break-word;color:var(--content-text-color);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:16px;font-weight:500;line-height:1.5}.markdown details{display:block}.markdown summary{display:list-item}.markdown a{background-color:initial}.markdown a:active,.markdown a:hover{outline-width:0}.markdown strong{font-weight:inherit;font-weight:bolder}.markdown h1{margin:.67em 0}.markdown img{border-style:none}.markdown code,.markdown kbd,.markdown pre{font-family:monospace,monospace;font-size:1em}.markdown hr{box-sizing:initial;overflow:visible}.markdown input{font:inherit;margin:0;overflow:visible}.markdown [type=checkbox]{box-sizing:border-box;padding:0}.markdown *{box-sizing:border-box}.markdown input{font-family:inherit;font-size:inherit;line-height:inherit}.markdown a{border-bottom:.05em solid;border-color:var(--link-text-color);color:var(--link-text-color);text-decoration:none}.markdown a.anchor{border-bottom:none}.markdown strong{font-weight:700}.markdown hr{background:transparent;border-bottom:1px solid var(--markdown-blockquote-border-color);height:0;margin:15px 0;overflow:hidden}.markdown hr:after,.markdown hr:before{content:"";display:table}.markdown hr:after{clear:both}.markdown table{border-collapse:collapse;border-spacing:0}.markdown td,.markdown th{padding:0}.markdown details summary{cursor:pointer}.markdown h1,.markdown h2,.markdown h3,.markdown h4,.markdown h5,.markdown h6{margin-bottom:0;margin-top:0}.markdown h1{font-size:32px}.markdown h1,.markdown h2{font-weight:600}.markdown h2{font-size:24px}.markdown h3{font-size:20px}.markdown h3,.markdown h4{font-weight:600}.markdown h4{font-size:16px}.markdown h5{font-size:14px}.markdown h5,.markdown h6{font-weight:600}.markdown h6{font-size:12px}.markdown p{margin-bottom:10px;margin-top:0}.markdown blockquote{margin:0}.markdown ol,.markdown ul{margin-bottom:0;margin-top:0;padding-left:0}.markdown ol ol,.markdown ul ol{list-style-type:lower-roman}.markdown ol ol ol,.markdown ol ul ol,.markdown ul ol ol,.markdown ul ul ol{list-style-type:lower-alpha}.markdown dd{margin-left:0}.markdown code,.markdown pre{font-family:SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;font-size:12px}.markdown code.language-text{border-radius:3px;font-size:85%;padding:.2em .4em}.markdown :not(pre)>code.language-text{background:hsla(44,6%,50%,.15);color:#eb5757;overflow-wrap:break-word}.markdown pre{margin-bottom:0;margin-top:0}.markdown input::-webkit-inner-spin-button,.markdown input::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}.markdown :checked+.radio-label{border-color:#0366d6;position:relative;z-index:1}.markdown .border{border:1px solid var(--markdown-border-color)!important}.markdown .border-0{border:0!important}.markdown .border-bottom{border-bottom:1px solid var(--markdown-border-color)!important}.markdown .rounded-1{border-radius:3px!important}.markdown .bg-white{background-color:transparent!important}.markdown .bg-gray-light{background-color:#fafbfc!important}.markdown .text-gray-light{color:#6a737d!important}.markdown .pl-3,.markdown .px-3{padding-left:16px!important}.markdown .px-3{padding-right:16px!important}.markdown .f6{font-size:12px!important}.markdown .lh-condensed{line-height:1.25!important}.markdown .text-bold{font-weight:600!important}.markdown .pl-c{color:#6a737d}.markdown .pl-c1,.markdown .pl-s .pl-v{color:#005cc5}.markdown .pl-e,.markdown .pl-en{color:#6f42c1}.markdown .pl-s .pl-s1,.markdown .pl-smi{color:#24292e}.markdown .pl-ent{color:#22863a}.markdown .pl-k{color:#d73a49}.markdown .pl-pds,.markdown .pl-s,.markdown .pl-s .pl-pse .pl-s1,.markdown .pl-sr,.markdown .pl-sr .pl-cce,.markdown .pl-sr .pl-sra,.markdown .pl-sr .pl-sre{color:#032f62}.markdown .pl-smw,.markdown .pl-v{color:#e36209}.markdown .pl-bu{color:#b31d28}.markdown .pl-ii{background-color:#b31d28;color:#fafbfc}.markdown .pl-c2{background-color:#d73a49;color:#fafbfc}.markdown .pl-c2:before{content:"^M"}.markdown .pl-sr .pl-cce{color:#22863a;font-weight:700}.markdown .pl-ml{color:#735c0f}.markdown .pl-mh,.markdown .pl-mh .pl-en,.markdown .pl-ms{color:#005cc5;font-weight:700}.markdown .pl-mi{color:#24292e;font-style:italic}.markdown .pl-mb{color:#24292e;font-weight:700}.markdown .pl-md{background-color:#ffeef0;color:#b31d28}.markdown .pl-mi1{background-color:#f0fff4;color:#22863a}.markdown .pl-mc{background-color:#ffebda;color:#e36209}.markdown .pl-mi2{background-color:#005cc5;color:#f6f8fa}.markdown .pl-mdr{color:#6f42c1;font-weight:700}.markdown .pl-ba{color:#586069}.markdown .pl-sg{color:#959da5}.markdown .pl-corl{color:#032f62;text-decoration:underline}.markdown .mb-0{margin-bottom:0!important}.markdown .my-2{margin-bottom:8px!important;margin-top:8px!important}.markdown .pl-0{padding-left:0!important}.markdown .py-0{padding-bottom:0!important;padding-top:0!important}.markdown .pl-1{padding-left:4px!important}.markdown .pl-2{padding-left:8px!important}.markdown .py-2{padding-bottom:8px!important;padding-top:8px!important}.markdown .pl-3{padding-left:16px!important}.markdown .pl-4{padding-left:24px!important}.markdown .pl-5{padding-left:32px!important}.markdown .pl-6{padding-left:40px!important}.markdown .pl-7{padding-left:48px!important}.markdown .pl-8{padding-left:64px!important}.markdown .pl-9{padding-left:80px!important}.markdown .pl-10{padding-left:96px!important}.markdown .pl-11{padding-left:112px!important}.markdown .pl-12{padding-left:128px!important}.markdown hr{border-bottom-color:#eee}.markdown kbd{background-color:#fafbfc;border:1px solid #d1d5da;border-radius:3px;box-shadow:inset 0 -1px 0 #d1d5da;color:#444d56;display:inline-block;font:11px SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;line-height:10px;padding:3px 5px;vertical-align:middle}.markdown:after,.markdown:before{content:"";display:table}.markdown:after{clear:both}.markdown>:first-child{margin-top:0!important}.markdown>:last-child{margin-bottom:0!important}.markdown a:not([href]){color:inherit;text-decoration:none}.markdown blockquote,.markdown details,.markdown dl,.markdown ol,.markdown p,.markdown pre,.markdown table,.markdown ul{margin-bottom:16px;margin-top:0}.markdown hr{background-color:var(--markdown-border-color);border:0;height:.25em;margin:24px 0;padding:0}.markdown blockquote{border-left:.25em solid var(--markdown-blockquote-border-color);color:#6a737d;padding:0 1em}.markdown blockquote>:first-child{margin-top:0}.markdown blockquote>:last-child{margin-bottom:0}.markdown h1,.markdown h2,.markdown h3,.markdown h4,.markdown h5,.markdown h6{font-weight:600;line-height:1.25;margin-bottom:16px;margin-top:24px}.markdown h1{font-size:2em}.markdown h2{font-size:1.5em}.markdown h3{font-size:1.25em}.markdown h4{font-size:1em}.markdown h5{font-size:.875em}.markdown h6{color:#6a737d;font-size:.85em}.markdown ol,.markdown ul{padding-left:2em}.markdown ol ol,.markdown ol ul,.markdown ul ol,.markdown ul ul{margin-bottom:0;margin-top:0}.markdown ol{list-style-type:decimal}.markdown ul{list-style-type:disc}.markdown li{word-wrap:break-all;display:list-item;text-align:-webkit-match-parent}.markdown li>p{margin-top:16px}.markdown li+li{margin-top:.25em}.markdown dl{padding:0}.markdown dl dt{font-size:1em;font-style:italic;font-weight:600;margin-top:16px;padding:0}.markdown dl dd{margin-bottom:16px;padding:0 16px}.markdown table{display:block;overflow:auto;width:100%}.markdown table th{font-weight:600}.markdown table td,.markdown table th{border:1px solid var(--markdown-table-border-color);padding:6px 13px}.markdown table tr{border-top:1px solid var(--markdown-table-border-color)}.markdown table tr:nth-child(2n){background-color:var(--markdown-table-even-cell-background-color)}.markdown img{background-color:transparent;box-sizing:initial;display:block;margin:0 auto;max-width:100%}.markdown img[align=right]{padding-left:20px}.markdown img[align=left]{padding-right:20px}.markdown code{background-color:rgba(27,31,35,.05);border-radius:3px;font-size:85%;margin:0;padding:.2em .4em}.markdown pre{word-wrap:normal}.markdown pre>code{background:transparent;border:0;font-size:100%;margin:0;padding:0;white-space:pre;word-break:normal}.markdown .highlight{margin-bottom:16px}.markdown .highlight pre{margin-bottom:0;word-break:normal}.markdown .highlight pre,.markdown pre{background-color:#f6f8fa;border-radius:3px;font-size:85%;line-height:1.45;overflow:auto;padding:16px}.markdown pre code{word-wrap:normal;background-color:initial;border:0;display:inline;line-height:inherit;margin:0;max-width:auto;overflow:visible;padding:0}.markdown .commit-tease-sha{color:#444d56;display:inline-block;font-family:SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;font-size:90%}.markdown .full-commit .btn-outline:not(:disabled):hover{border-color:#005cc5;color:#005cc5}.markdown .blob-wrapper{overflow-x:auto;overflow-y:hidden}.markdown .blob-wrapper-embedded{max-height:240px;overflow-y:auto}.markdown .blob-num{color:rgba(27,31,35,.3);cursor:pointer;font-family:SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;font-size:12px;line-height:20px;min-width:50px;padding-left:10px;padding-right:10px;text-align:right;-webkit-user-select:none;user-select:none;vertical-align:top;white-space:nowrap;width:1%}.markdown .blob-num:hover{color:rgba(27,31,35,.6)}.markdown .blob-num:before{content:attr(data-line-number)}.markdown .blob-code{line-height:20px;padding-left:10px;padding-right:10px;position:relative;vertical-align:top}.markdown .blob-code-inner{word-wrap:normal;color:#24292e;font-family:SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;font-size:12px;overflow:visible;white-space:pre}.markdown .pl-token.active,.markdown .pl-token:hover{background:#ffea7f;cursor:pointer}.markdown .tab-size[data-tab-size="1"]{-o-tab-size:1;tab-size:1}.markdown .tab-size[data-tab-size="2"]{-o-tab-size:2;tab-size:2}.markdown .tab-size[data-tab-size="3"]{-o-tab-size:3;tab-size:3}.markdown .tab-size[data-tab-size="4"]{-o-tab-size:4;tab-size:4}.markdown .tab-size[data-tab-size="5"]{-o-tab-size:5;tab-size:5}.markdown .tab-size[data-tab-size="6"]{-o-tab-size:6;tab-size:6}.markdown .tab-size[data-tab-size="7"]{-o-tab-size:7;tab-size:7}.markdown .tab-size[data-tab-size="8"]{-o-tab-size:8;tab-size:8}.markdown .tab-size[data-tab-size="9"]{-o-tab-size:9;tab-size:9}.markdown .tab-size[data-tab-size="10"]{-o-tab-size:10;tab-size:10}.markdown .tab-size[data-tab-size="11"]{-o-tab-size:11;tab-size:11}.markdown .tab-size[data-tab-size="12"]{-o-tab-size:12;tab-size:12}.markdown .task-list-item{list-style-type:none}.markdown .task-list-item+.task-list-item{margin-top:3px}.markdown .task-list-item input{margin:0 .2em .25em -1.6em;vertical-align:middle}.markdown .table-of-contents{align-items:flex-start;display:flex;flex-direction:column;justify-content:center;position:fixed;right:0;top:75px;width:340px}@media(max-width:1300px){.markdown .table-of-contents{display:none}}.markdown .table-of-contents ul{cursor:pointer;list-style-type:none}.markdown .table-of-contents ul li a{border-bottom:none;color:var(--secondary-text-color);font-size:14px;height:30px;padding:6px 2px;width:100%}.markdown .table-of-contents ul p{margin:0}.markdown .gatsby-resp-image-wrapper{display:flex!important;justify-content:center!important;max-height:560px!important;width:100%!important}.markdown .gatsby-resp-image-wrapper img{height:auto!important;max-height:560px!important;max-width:100%!important;position:relative!important;width:auto!important}.markdown .gatsby-resp-image-wrapper+em{color:#6a737d;display:block;font-size:15px;font-style:italic;text-align:center}code[class*=language-],pre[class*=language-]{word-wrap:normal;background:none;color:#ccc;font-family:Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-size:1em;-webkit-hyphens:none;hyphens:none;line-height:1.5;-o-tab-size:4;tab-size:4;text-align:left;white-space:pre;word-break:normal;word-spacing:normal}pre[class*=language-]{margin:.5em 0;overflow:auto;padding:1em}:not(pre)>code[class*=language-],pre[class*=language-]{background:#2d2d2d}:not(pre)>code[class*=language-]{border-radius:.3em;padding:.1em;white-space:normal}.token.block-comment,.token.cdata,.token.comment,.token.doctype,.token.prolog{color:#999}.token.punctuation{color:#ccc}.token.attr-name,.token.deleted,.token.namespace,.token.tag{color:#e2777a}.token.function-name{color:#6196cc}.token.boolean,.token.function,.token.number{color:#f08d49}.token.class-name,.token.constant,.token.property,.token.symbol{color:#f8c555}.token.atrule,.token.builtin,.token.important,.token.keyword,.token.selector{color:#cc99cd}.token.attr-value,.token.char,.token.regex,.token.string,.token.variable{color:#7ec699}.token.entity,.token.operator,.token.url{color:#67cdcc}.token.bold,.token.important{font-weight:700}.token.italic{font-style:italic}.token.entity{cursor:help}.token.inserted{color:green}.post-content{margin-bottom:20px;width:100%}.category-page-header-wrapper,.post-content{display:flex;flex-direction:column;justify-content:center}.category-page-header-wrapper{align-items:center;margin-bottom:30px;margin-top:30px}.category-page-header-wrapper .category-page-title{border-bottom:3px solid var(--primary-text-color);font-size:40px;font-weight:700;margin-bottom:15px;padding-bottom:7px;text-align:center;width:-webkit-fit-content;width:-moz-fit-content;width:fit-content}.category-page-header-wrapper .category-page-subtitle{font-size:20px;font-weight:500;padding-bottom:10px;text-align:center}.post-card-wrapper{display:flex;justify-content:center;min-height:150px;width:100%}.post-card-wrapper .post-card{border:1px solid var(--post-card-border-color);border-radius:6px;color:var(--primary-text-color);cursor:pointer;display:flex;flex-direction:column;height:100%;margin-bottom:15px;max-width:720px;padding:15px;transition:-webkit-transform .2s;transition:transform .2s;transition:transform .2s,-webkit-transform .2s;width:100%}.post-card-wrapper .post-card:hover .title{text-decoration:underline}@media(min-width:768px){.post-card-wrapper .post-card{margin-bottom:0}}.post-card-wrapper .post-card .title{font-size:18px;font-weight:600;line-height:1.4;margin-bottom:7px}.post-card-wrapper .post-card .description{-webkit-line-clamp:3;-webkit-box-orient:vertical;color:var(--primary-text-color);display:-webkit-box;font-size:13px;line-height:20px;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis}.post-card-wrapper .post-card .info{color:var(--about-link-icon-color);display:flex;font-size:14px;justify-content:space-between;margin-top:auto}.post-card-wrapper .post-card .info .categories{display:flex}.post-card-wrapper .post-card .info .categories .category{margin-left:4px}.post-card-wrapper .post-card .info .categories .category:hover{text-decoration:underline}.post-card-column-wrapper{display:flex;justify-content:center;width:100%}.post-card-column-wrapper .post-card-column{align-items:center;display:flex;flex-direction:column;width:100%}.post-card-column-wrapper .post-card-column .post-card-wrapper{margin-bottom:10px}.post-card-column-wrapper .post-card-column .more-post-card-button{background-color:var(--button-background-color);color:var(--tab-hover-text-color);font-size:15px;font-weight:500;height:40px}.post-tabs-wrapper{align-self:flex-start;display:flex;flex-direction:column;justify-content:center;top:0;width:100%}.post-tabs-wrapper .post-tabs{display:flex;height:40px;justify-content:center;margin-bottom:12px;max-width:760px;width:100%}.post-tabs-wrapper .post-tabs .mui-tabs .MuiTab-root{color:var(--tab-text-color);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:17px;font-weight:500;height:40px;min-height:auto;min-width:auto;padding:10px 12px;transition:all .2s ease}.post-tabs-wrapper .post-tabs .mui-tabs .Mui-selected,.post-tabs-wrapper .post-tabs .mui-tabs .MuiTab-root :hover{color:var(--tab-hover-text-color);transition:all .2s ease}.post-tabs-wrapper .post-tabs .mui-tabs .Mui-selected{background-color:var(--tab-selected-background-color);border-radius:8px;font-weight:600}.post-tabs-wrapper .post-tabs .mui-tabs .MuiTabScrollButton-root{height:40px;width:20px}.post-tabs-wrapper .post-tabs .mui-tabs .MuiTabs-scrollable{height:40px}.post-tabs-wrapper .post-tabs .mui-tabs .MuiTabs-indicator{display:none}</style><style data-emotion="css-global o6gwfi">html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;box-sizing:border-box;-webkit-text-size-adjust:100%;}*,*::before,*::after{box-sizing:inherit;}strong,b{font-weight:700;}body{margin:0;color:rgba(0, 0, 0, 0.87);font-family:"Roboto","Helvetica","Arial",sans-serif;font-weight:400;font-size:1rem;line-height:1.5;letter-spacing:0.00938em;background-color:#fff;}@media print{body{background-color:#fff;}}body::backdrop{background-color:#fff;}</style><style data-emotion="css-global 1prfaxn">@-webkit-keyframes mui-auto-fill{from{display:block;}}@keyframes mui-auto-fill{from{display:block;}}@-webkit-keyframes mui-auto-fill-cancel{from{display:block;}}@keyframes mui-auto-fill-cancel{from{display:block;}}</style><style data-emotion="css 18nc3u2 feqhe6 12rx5qu mnn31 vubbuv 1yxmbwk 6flbmm">.css-18nc3u2.Mui-focused .MuiAutocomplete-clearIndicator{visibility:visible;}@media (pointer: fine){.css-18nc3u2:hover .MuiAutocomplete-clearIndicator{visibility:visible;}}.css-18nc3u2 .MuiAutocomplete-tag{margin:3px;max-width:calc(100% - 6px);}.css-18nc3u2 .MuiAutocomplete-inputRoot{-webkit-box-flex-wrap:wrap;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;}.MuiAutocomplete-hasPopupIcon.css-18nc3u2 .MuiAutocomplete-inputRoot,.MuiAutocomplete-hasClearIcon.css-18nc3u2 .MuiAutocomplete-inputRoot{padding-right:30px;}.MuiAutocomplete-hasPopupIcon.MuiAutocomplete-hasClearIcon.css-18nc3u2 .MuiAutocomplete-inputRoot{padding-right:56px;}.css-18nc3u2 .MuiAutocomplete-inputRoot .MuiAutocomplete-input{width:0;min-width:30px;}.css-18nc3u2 .MuiInput-root{padding-bottom:1px;}.css-18nc3u2 .MuiInput-root .MuiInput-input{padding:4px 4px 4px 0px;}.css-18nc3u2 .MuiInput-root.MuiInputBase-sizeSmall .MuiInput-input{padding:2px 4px 3px 0;}.css-18nc3u2 .MuiOutlinedInput-root{padding:9px;}.MuiAutocomplete-hasPopupIcon.css-18nc3u2 .MuiOutlinedInput-root,.MuiAutocomplete-hasClearIcon.css-18nc3u2 .MuiOutlinedInput-root{padding-right:39px;}.MuiAutocomplete-hasPopupIcon.MuiAutocomplete-hasClearIcon.css-18nc3u2 .MuiOutlinedInput-root{padding-right:65px;}.css-18nc3u2 .MuiOutlinedInput-root .MuiAutocomplete-input{padding:7.5px 4px 7.5px 5px;}.css-18nc3u2 .MuiOutlinedInput-root .MuiAutocomplete-endAdornment{right:9px;}.css-18nc3u2 .MuiOutlinedInput-root.MuiInputBase-sizeSmall{padding-top:6px;padding-bottom:6px;padding-left:6px;}.css-18nc3u2 .MuiOutlinedInput-root.MuiInputBase-sizeSmall .MuiAutocomplete-input{padding:2.5px 4px 2.5px 8px;}.css-18nc3u2 .MuiFilledInput-root{padding-top:19px;padding-left:8px;}.MuiAutocomplete-hasPopupIcon.css-18nc3u2 .MuiFilledInput-root,.MuiAutocomplete-hasClearIcon.css-18nc3u2 .MuiFilledInput-root{padding-right:39px;}.MuiAutocomplete-hasPopupIcon.MuiAutocomplete-hasClearIcon.css-18nc3u2 .MuiFilledInput-root{padding-right:65px;}.css-18nc3u2 .MuiFilledInput-root .MuiFilledInput-input{padding:7px 4px;}.css-18nc3u2 .MuiFilledInput-root .MuiAutocomplete-endAdornment{right:9px;}.css-18nc3u2 .MuiFilledInput-root.MuiInputBase-sizeSmall{padding-bottom:1px;}.css-18nc3u2 .MuiFilledInput-root.MuiInputBase-sizeSmall .MuiFilledInput-input{padding:2.5px 4px;}.css-18nc3u2 .MuiInputBase-hiddenLabel{padding-top:8px;}.css-18nc3u2 .MuiFilledInput-root.MuiInputBase-hiddenLabel{padding-top:0;padding-bottom:0;}.css-18nc3u2 .MuiFilledInput-root.MuiInputBase-hiddenLabel .MuiAutocomplete-input{padding-top:16px;padding-bottom:17px;}.css-18nc3u2 .MuiFilledInput-root.MuiInputBase-hiddenLabel.MuiInputBase-sizeSmall .MuiAutocomplete-input{padding-top:8px;padding-bottom:9px;}.css-18nc3u2 .MuiAutocomplete-input{-webkit-box-flex:1;-webkit-flex-grow:1;-ms-flex-positive:1;flex-grow:1;text-overflow:ellipsis;opacity:1;}.css-feqhe6{display:-webkit-inline-box;display:-webkit-inline-flex;display:-ms-inline-flexbox;display:inline-flex;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;position:relative;min-width:0;padding:0;margin:0;border:0;vertical-align:top;width:100%;}.css-12rx5qu{font-family:"Roboto","Helvetica","Arial",sans-serif;font-weight:400;font-size:1rem;line-height:1.4375em;letter-spacing:0.00938em;color:rgba(0, 0, 0, 0.87);box-sizing:border-box;position:relative;cursor:text;display:-webkit-inline-box;display:-webkit-inline-flex;display:-ms-inline-flexbox;display:inline-flex;-webkit-align-items:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;width:100%;position:relative;}.css-12rx5qu.Mui-disabled{color:rgba(0, 0, 0, 0.38);cursor:default;}label+.css-12rx5qu{margin-top:16px;}.css-12rx5qu:after{border-bottom:2px solid #1976d2;left:0;bottom:0;content:"";position:absolute;right:0;-webkit-transform:scaleX(0);-moz-transform:scaleX(0);-ms-transform:scaleX(0);transform:scaleX(0);-webkit-transition:-webkit-transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;transition:transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;pointer-events:none;}.css-12rx5qu.Mui-focused:after{-webkit-transform:scaleX(1) translateX(0);-moz-transform:scaleX(1) translateX(0);-ms-transform:scaleX(1) translateX(0);transform:scaleX(1) translateX(0);}.css-12rx5qu.Mui-error:before,.css-12rx5qu.Mui-error:after{border-bottom-color:#d32f2f;}.css-12rx5qu:before{border-bottom:1px solid rgba(0, 0, 0, 0.42);left:0;bottom:0;content:"\00a0";position:absolute;right:0;-webkit-transition:border-bottom-color 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:border-bottom-color 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;pointer-events:none;}.css-12rx5qu:hover:not(.Mui-disabled, .Mui-error):before{border-bottom:2px solid rgba(0, 0, 0, 0.87);}@media (hover: none){.css-12rx5qu:hover:not(.Mui-disabled, .Mui-error):before{border-bottom:1px solid rgba(0, 0, 0, 0.42);}}.css-12rx5qu.Mui-disabled:before{border-bottom-style:dotted;}.css-mnn31{font:inherit;letter-spacing:inherit;color:currentColor;padding:4px 0 5px;border:0;box-sizing:content-box;background:none;height:1.4375em;margin:0;-webkit-tap-highlight-color:transparent;display:block;min-width:0;width:100%;-webkit-animation-name:mui-auto-fill-cancel;animation-name:mui-auto-fill-cancel;-webkit-animation-duration:10ms;animation-duration:10ms;}.css-mnn31::-webkit-input-placeholder{color:currentColor;opacity:0.42;-webkit-transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;}.css-mnn31::-moz-placeholder{color:currentColor;opacity:0.42;-webkit-transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;}.css-mnn31:-ms-input-placeholder{color:currentColor;opacity:0.42;-webkit-transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;}.css-mnn31::-ms-input-placeholder{color:currentColor;opacity:0.42;-webkit-transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;}.css-mnn31:focus{outline:0;}.css-mnn31:invalid{box-shadow:none;}.css-mnn31::-webkit-search-decoration{-webkit-appearance:none;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31::-webkit-input-placeholder{opacity:0!important;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31::-moz-placeholder{opacity:0!important;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31:-ms-input-placeholder{opacity:0!important;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31::-ms-input-placeholder{opacity:0!important;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31:focus::-webkit-input-placeholder{opacity:0.42;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31:focus::-moz-placeholder{opacity:0.42;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31:focus:-ms-input-placeholder{opacity:0.42;}label[data-shrink=false]+.MuiInputBase-formControl .css-mnn31:focus::-ms-input-placeholder{opacity:0.42;}.css-mnn31.Mui-disabled{opacity:1;-webkit-text-fill-color:rgba(0, 0, 0, 0.38);}.css-mnn31:-webkit-autofill{-webkit-animation-duration:5000s;animation-duration:5000s;-webkit-animation-name:mui-auto-fill;animation-name:mui-auto-fill;}.css-vubbuv{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;width:1em;height:1em;display:inline-block;fill:currentColor;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;-webkit-transition:fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;font-size:1.5rem;}.css-1yxmbwk{display:-webkit-inline-box;display:-webkit-inline-flex;display:-ms-inline-flexbox;display:inline-flex;-webkit-align-items:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;-webkit-justify-content:center;justify-content:center;position:relative;box-sizing:border-box;-webkit-tap-highlight-color:transparent;background-color:transparent;outline:0;border:0;margin:0;border-radius:0;padding:0;cursor:pointer;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;vertical-align:middle;-moz-appearance:none;-webkit-appearance:none;-webkit-text-decoration:none;text-decoration:none;color:inherit;text-align:center;-webkit-flex:0 0 auto;-ms-flex:0 0 auto;flex:0 0 auto;font-size:1.5rem;padding:8px;border-radius:50%;overflow:visible;color:rgba(0, 0, 0, 0.54);-webkit-transition:background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;}.css-1yxmbwk::-moz-focus-inner{border-style:none;}.css-1yxmbwk.Mui-disabled{pointer-events:none;cursor:default;}@media print{.css-1yxmbwk{-webkit-print-color-adjust:exact;color-adjust:exact;}}.css-1yxmbwk:hover{background-color:rgba(0, 0, 0, 0.04);}@media (hover: none){.css-1yxmbwk:hover{background-color:transparent;}}.css-1yxmbwk.Mui-disabled{background-color:transparent;color:rgba(0, 0, 0, 0.26);}.css-6flbmm{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;width:1em;height:1em;display:inline-block;fill:currentColor;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;-webkit-transition:fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;transition:fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;font-size:2.1875rem;}</style><link rel="preconnect" href="https://www.google-analytics.com"/><link rel="dns-prefetch" href="https://www.google-analytics.com"/><script>
+  
+  function gaOptout(){document.cookie=disableStr+'=true; expires=Thu, 31 Dec 2099 23:59:59 UTC;path=/',window[disableStr]=!0}var gaProperty='0',disableStr='ga-disable-'+gaProperty;document.cookie.indexOf(disableStr+'=true')>-1&&(window[disableStr]=!0);
+  if(true) {
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  }
+  if (typeof ga === "function") {
+    ga('create', '0', 'auto', {});
+      ga('set', 'anonymizeIp', true);
+      
+      
+      
+      
+      }</script><link rel="icon" href="/favicon-32x32.png?v=ad9e124e5060ab5ddbaf24744e1cfc72" type="image/png"/><link rel="manifest" href="/manifest.webmanifest" crossorigin="anonymous"/><link rel="apple-touch-icon" sizes="48x48" href="/icons/icon-48x48.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="256x256" href="/icons/icon-256x256.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png?v=ad9e124e5060ab5ddbaf24744e1cfc72"/><style type="text/css">
+    .anchor.before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: translateX(-100%);
+      padding-right: 4px;
+    }
+    .anchor.after {
+      display: inline-block;
+      padding-left: 4px;
+    }
+    h1 .anchor svg,
+    h2 .anchor svg,
+    h3 .anchor svg,
+    h4 .anchor svg,
+    h5 .anchor svg,
+    h6 .anchor svg {
+      visibility: hidden;
+    }
+    h1:hover .anchor svg,
+    h2:hover .anchor svg,
+    h3:hover .anchor svg,
+    h4:hover .anchor svg,
+    h5:hover .anchor svg,
+    h6:hover .anchor svg,
+    h1 .anchor:focus svg,
+    h2 .anchor:focus svg,
+    h3 .anchor:focus svg,
+    h4 .anchor:focus svg,
+    h5 .anchor:focus svg,
+    h6 .anchor:focus svg {
+      visibility: visible;
+    }
+  </style><script>
+    document.addEventListener("DOMContentLoaded", function(event) {
+      var hash = window.decodeURI(location.hash.replace('#', ''))
+      if (hash !== '') {
+        var element = document.getElementById(hash)
+        if (element) {
+          var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+          var clientTop = document.documentElement.clientTop || document.body.clientTop || 0
+          var offset = element.getBoundingClientRect().top + scrollTop - clientTop
+          // Wait for the browser to finish rendering before scrolling.
+          setTimeout((function() {
+            window.scrollTo(0, offset - 0)
+          }), 0)
+        }
+      }
+    })
+  </script><link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href="/static/webfonts/s/roboto/v30/KFOlCnqEu92Fr1MmSU5fBBc4.woff2"/><link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href="/static/webfonts/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"/><link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href="/static/webfonts/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fBBc4.woff2"/><style>@font-face{font-display:swap;font-family:Roboto;font-style:normal;font-weight:300;src:url(/static/webfonts/s/roboto/v30/KFOlCnqEu92Fr1MmSU5fBBc4.woff2) format("woff2")}@font-face{font-display:swap;font-family:Roboto;font-style:normal;font-weight:400;src:url(/static/webfonts/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2) format("woff2")}@font-face{font-display:swap;font-family:Roboto;font-style:normal;font-weight:500;src:url(/static/webfonts/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fBBc4.woff2) format("woff2")}@font-face{font-display:swap;font-family:Roboto;font-style:normal;font-weight:300;src:url(/static/webfonts/s/roboto/v30/KFOlCnqEu92Fr1MmSU5fBBc-.woff) format("woff")}@font-face{font-display:swap;font-family:Roboto;font-style:normal;font-weight:400;src:url(/static/webfonts/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxM.woff) format("woff")}@font-face{font-display:swap;font-family:Roboto;font-style:normal;font-weight:500;src:url(/static/webfonts/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fBBc-.woff) format("woff")}</style><link rel="sitemap" type="application/xml" href="/sitemap.xml"/><style>.gatsby-image-wrapper{position:relative;overflow:hidden}.gatsby-image-wrapper picture.object-fit-polyfill{position:static!important}.gatsby-image-wrapper img{bottom:0;height:100%;left:0;margin:0;max-width:none;padding:0;position:absolute;right:0;top:0;width:100%;object-fit:cover}.gatsby-image-wrapper [data-main-image]{opacity:0;transform:translateZ(0);transition:opacity .25s linear;will-change:opacity}.gatsby-image-wrapper-constrained{display:inline-block;vertical-align:top}</style><noscript><style>.gatsby-image-wrapper noscript [data-main-image]{opacity:1!important}.gatsby-image-wrapper [data-placeholder-image]{opacity:0!important}</style></noscript><script type="module">const e="undefined"!=typeof HTMLImageElement&&"loading"in HTMLImageElement.prototype;e&&document.body.addEventListener("load",(function(e){const t=e.target;if(void 0===t.dataset.mainImage)return;if(void 0===t.dataset.gatsbyImageSsr)return;let a=null,n=t;for(;null===a&&n;)void 0!==n.parentNode.dataset.gatsbyImageWrapper&&(a=n.parentNode),n=n.parentNode;const o=a.querySelector("[data-placeholder-image]"),r=new Image;r.src=t.currentSrc,r.decode().catch((()=>{})).then((()=>{t.style.opacity=1,o&&(o.style.opacity=0,o.style.transition="opacity 500ms linear")}))}),!0);</script><title data-react-helmet="true">모아밤의 실시간 선착순 쿠폰 이벤트 도입기</title></head><body><div id="___gatsby"><div style="outline:none" tabindex="-1" id="gatsby-focus-wrapper"><div class="page-wrapper"><header class="page-header-wrapper"><div class="page-header"><div class="front-section"><a class="link" href="/">moabam</a></div><div class="trailing-section"><a class="link" href="/about">about</a><a class="link" href="/posts">posts</a><div class="MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-18nc3u2"><div class="search-input-wrapper"><div class="MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root search-input css-feqhe6"><div class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd MuiAutocomplete-inputRoot css-12rx5qu"><input type="text" aria-invalid="false" autoComplete="off" value="" class="MuiInputBase-input MuiInput-input MuiInputBase-inputAdornedEnd MuiAutocomplete-input MuiAutocomplete-inputFocused css-mnn31" aria-autocomplete="list" aria-expanded="false" autoCapitalize="none" spellcheck="false" role="combobox"/><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium search-icon css-vubbuv" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="SearchOutlinedIcon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg></div></div></div></div></div></div></header><main class="page-content"><header class="post-header"><div class="emoji">🧑🏻‍💻</div><div class="info"><div class="categories"><a class="category" href="/posts/Tech">Tech</a></div></div><h1 class="title">모아밤의 실시간 선착순 쿠폰 이벤트 도입기</h1><div class="info"><div class="author">posted by <strong>홍혁준</strong>,</div> <!-- -->November 09, 2023</div></header><div class="post-content"><div class="markdown"><p>안녕하세요. 현재 데브코스 4기로 활동 중인 모아밤팀 서버 개발자 홍혁준입니다.</p>
+<p>이번 포스팅에서 <strong>실시간 선착순 시스템</strong>에 대해 이야기를 풀어내 보려고 합니다. 감사합니다.</p>
+<hr>
+<h2 id="배경" style="position:relative;"><a href="#%EB%B0%B0%EA%B2%BD" aria-label="배경 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>배경</h2>
+<p>저희 모아밤 서비스는 사용자들을 위해 쿠폰 이벤트를 도입하게 되었습니다.
+현재 생각 중인 쿠폰은 선착순으로 진행하는 이벤트로 사용자들이 다양한 종류의 N개 쿠폰을 선착순으로 지급 받도록 할 계획입니다.</p>
+<p>선착순 쿠폰 발급 이벤트는 짧은 시간에 많은 트래픽이 발생합니다.
+중요한 점은 서버가 다운되지 않고 수량 제한에 맞춰 정확하게 쿠폰이 발급되어야 합니다.
+이런 사항들을 모아밤에서는 어떻게 해결했는지 살펴봅시다.</p>
+<h3 id="요구사항" style="position:relative;"><a href="#%EC%9A%94%EA%B5%AC%EC%82%AC%ED%95%AD" aria-label="요구사항 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>요구사항</h3>
+<ul>
+<li>사용자들은 정해진 재고에 따라 선착순으로 쿠폰을 발급 받을 수 있다.</li>
+<li>동일한 이벤트에서 동일 사용자가 쿠폰을 중복하여 발급 받을 수 없다.</li>
+<li>쿠폰은 발급 후 쿠폰함 혹은 결제창에서 1회 사용 가능하다.</li>
+</ul>
+<h3 id="고민사항" style="position:relative;"><a href="#%EA%B3%A0%EB%AF%BC%EC%82%AC%ED%95%AD" aria-label="고민사항 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>고민사항</h3>
+<ul>
+<li>N번의 선착순일 때, 정확하게 N번 발급해줄 수 있어야 합니다.</li>
+<li>쿠폰 발급 요청을 여러번 하는 경우 최초 요청을 선착순 발급 기준으로 1회만 받습니다.</li>
+<li>짧은 시간 내에 발생하는 높은 트래픽을 감당해야 합니다.</li>
+</ul>
+<hr>
+<h2 id="모아밤의-쿠폰-발급-아키텍처" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4%EC%9D%98-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98" aria-label="모아밤의 쿠폰 발급 아키텍처 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤의 쿠폰 발급 아키텍처</h2>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 20%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAECAYAAACOXx+WAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAj0lEQVQY031PSwoCMRTr/a/gFQQv4A3ceQBltOKu2g/t9Bt5GQZcOAZCXtM0vCpsYIyB3jt1pZz/QTJKhhgjWmtkKYU6zzN95xwZQkDOmay1kpKVkvvjicv1xlIlhjGGQSmw1vKxlMistcY0TdSUEu/E997DvN5Az9gfz9gdTkvhuurWl78hm/9C6wOlLdkPRUA4TbNfKVQAAAAASUVORK5CYII='); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon1.png"
+        title="coupon1.png"
+        src="/static/436573b6d1398874d65228a206559242/37523/coupon1.png"
+        srcset="/static/436573b6d1398874d65228a206559242/e9ff0/coupon1.png 180w,
+/static/436573b6d1398874d65228a206559242/f21e7/coupon1.png 360w,
+/static/436573b6d1398874d65228a206559242/37523/coupon1.png 720w,
+/static/436573b6d1398874d65228a206559242/302a4/coupon1.png 1080w,
+/static/436573b6d1398874d65228a206559242/21b4d/coupon1.png 1280w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<p>쿠폰 발급을 위한 흐름을 살펴봅시다.</p>
+<ol>
+<li>사용자가 쿠폰 발급 요청을 서버로 보냅니다.</li>
+<li>서버에서는 요청을 받아 쿠폰 발급 로직을 처리합니다.</li>
+<li>발급된 쿠폰이 데이터베이스에 저장됩니다.</li>
+</ol>
+<p>이처럼 쿠폰 발급 요청은 매우 간단합니다. 하지만 쿠폰 발급 요청이 많아지고 트래픽이 많아진다면,
+그만큼 동시에 들어오는 요청이 많을 텐데 Race Condition 문제는 어떻게 해결해야 할까요?
+또 Race Condition 문제가 발생하지 않더라도 트래픽이 API 처리량을 넘어간다면 장애가 발생할텐데,
+이런 문제들이 어떤 상황에 발생하는 것이고 어떤 해결방법이 있고 모아밤에서는 어떻게 해결했을까요?
+계속해서 살펴봅시다.</p>
+<h3 id="race-condition-살펴보기" style="position:relative;"><a href="#race-condition-%EC%82%B4%ED%8E%B4%EB%B3%B4%EA%B8%B0" aria-label="race condition 살펴보기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Race Condition 살펴보기</h3>
+<blockquote>
+<p>Race Condition (경쟁 상태) : 둘 이상의 입력 또는 조작의 타이밍, 순서 등이 결과값에 영향을 줄 수 있는 상태</p>
+</blockquote>
+<p>모아밤 서비스에서 사용자들에게 선착순으로 100개의 쿠폰을 지급한다고 가정해봅시다.</p>
+<p>개발 관점으로 보면 여러명의 사용자가 쿠폰을 동시에 발급받아서 쿠키 재고를 감소시킬 수 있게 됩니다.
+즉 쿠폰(공유 자원)에 N명의 사용자가 접근하여 읽거나 쓰려고 하는 Race Condition이 발생할 수 있게 됩니다.</p>
+<h4 id="그림으로-이해하기" style="position:relative;"><a href="#%EA%B7%B8%EB%A6%BC%EC%9C%BC%EB%A1%9C-%EC%9D%B4%ED%95%B4%ED%95%98%EA%B8%B0" aria-label="그림으로 이해하기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>그림으로 이해하기</h4>
+<p>단, 한명의 사용자에게만 쿠폰을 지급하는 이벤트가 있다고 가정해봅시다. 이해를 위해 재고 감소 과정을 표현했습니다.</p>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 50%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAKCAYAAAC0VX7mAAAACXBIWXMAAAsTAAALEwEAmpwYAAACBElEQVQoz22S3WsTQRTF99/1QdGKiChS+iiIotA3H/omitpabH1QW2ttjdWEIEk2ye5287VJNsluPhp3d/bjJzN2K4oHLgNz75x7z7mjZVmGhFg4JM47ksEBbn0Xr/mGWXOTYFwlR+QbLIxNfGOHfuU1S3uX0N4mntsqn2UpWk6YJoKNjSesra1yfPSJVCwRwYxYBAgRc3Z2RhwFJNEcES7wJ0PW1x+zcv0qJ99OFEeSJGi/mTP16Onzlzx4tE6p/EMVTGdzvheLVCoVTNPEMEwM85QwEgRhxOFRgWcvNjEt+0KFtlwu6Xa7WJbFZDxGRCHD4ZAwDEmSGN/38TxPxXg8ZrFYkKYJ0+kU3/cIgp+q3nVdVavNZjNM06LVatHr9bBtm26vR5qmpGnG/yAVSeJSqUS5XEbXder1uhpKy4tebW1z684qly5f4+Dws7qbz+dMJhMcx1EN5SSSSCIIQnL/5ZmHFgSBGr9Q+MrO7lv29g+wWy01oZRYq+nUdJ1mo4FhGEqaRBhFCCHOlaR/CAeDAcViUY3e0HVM06Ddbquk9Lff79PpdFSMXJfRaEQcx/jTKffuP+Tm7btcWbmhGqilyIcXHc7PPCm/SrVapdlscmpZyifpsyQcDl2OvxTY2//I+w97anJpkfaX2ednLuXfReSeSXieT6PRUIvoO46yRP6WX86w5Dgglv5HAAAAAElFTkSuQmCC'); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon2.png"
+        title="coupon2.png"
+        src="/static/5b8872ac290d498cb5e670cd5d5213bb/37523/coupon2.png"
+        srcset="/static/5b8872ac290d498cb5e670cd5d5213bb/e9ff0/coupon2.png 180w,
+/static/5b8872ac290d498cb5e670cd5d5213bb/f21e7/coupon2.png 360w,
+/static/5b8872ac290d498cb5e670cd5d5213bb/37523/coupon2.png 720w,
+/static/5b8872ac290d498cb5e670cd5d5213bb/302a4/coupon2.png 1080w,
+/static/5b8872ac290d498cb5e670cd5d5213bb/21b4d/coupon2.png 1280w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<p>위 그림처럼 클라이언트 A가 쿠폰을 가져옵니다.
+하지만 클라이언트 B도 클라이언트 A가 쿠폰을 발급받기 전에 쿠폰을 가져오게 되고 클라이언트 A와 B 모두 가져온
+쿠폰 재고는 1개가 있습니다. 때문에, 결국 클라이언트 A와 B가 쿠폰을 발급받게 되고 쿠폰 재고는 -1개가 됩니다.
+이러한 상황을 Race Condition이라고 할 수 있습니다.</p>
+<p>이처럼 Race Condition은 두 개 이상의 스레드가 공유 데이터에 접근할 때 발생하는 문제이므로
+싱글 스레드로 작업을 한다면 레이드 컨디션은 일어나지 않습니다.
+하지만 싱글 스레드 작업은 먼저 요청한 사용자가 쿠폰이 발급되기까지 대기하다가 다른 사람들이 쿠폰 발급이
+가능해지기 때문에 성능이 좋지 못합니다. 그렇다면 어떻게 해결해야 할까요?</p>
+<hr>
+<h2 id="문제-해결---java-x" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---java-x" aria-label="문제 해결   java x permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>문제 해결 - Java <strong>(X)</strong></h2>
+<h3 id="자바의-synchronized-키워드-이용하기" style="position:relative;"><a href="#%EC%9E%90%EB%B0%94%EC%9D%98-synchronized-%ED%82%A4%EC%9B%8C%EB%93%9C-%EC%9D%B4%EC%9A%A9%ED%95%98%EA%B8%B0" aria-label="자바의 synchronized 키워드 이용하기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>자바의 synchronized 키워드 이용하기</h3>
+<p>자바의 synchronized는 멀티 스레드 환경에서 단 하나의 스레드만이 특정 코드 블럭을 실행하도록 보장하는
+역할을 합니다. 그래서 해결할 수 있을 거라 생각할 수 있습니다. 하지만 이는 서버가 여러 대가 되는 순간 다시
+Race Condition이 발생하게 되어 적절하지 않습니다.</p>
+<hr>
+<h2 id="문제-해결---lock-x" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---lock-x" aria-label="문제 해결   lock x permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>문제 해결 - Lock <strong>(X)</strong></h2>
+<h3 id="mysql-lock과-redis를-활용한-분산락을-이용하기" style="position:relative;"><a href="#mysql-lock%EA%B3%BC-redis%EB%A5%BC-%ED%99%9C%EC%9A%A9%ED%95%9C-%EB%B6%84%EC%82%B0%EB%9D%BD%EC%9D%84-%EC%9D%B4%EC%9A%A9%ED%95%98%EA%B8%B0" aria-label="mysql lock과 redis를 활용한 분산락을 이용하기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>MySQL Lock과 Redis를 활용한 분산락을 이용하기</h3>
+<p><a href="https://hongdosan.tistory.com/373">[🌐 동시성 이슈 보러 가기]</a></p>
+<p>MySQL Lock과 Redis Lock을 이용해도 충분히 해결할 수 있습니다. 하지만 다시 생각해봅시다.
+우리는 선착순으로 쿠폰을 발급해주기 위해 Coupon Table에서 해당 쿠폰의 갯수를 먼저 가져와야 합니다.
+그리고 나서 쿠폰 재고를 감소함과 동시에 한 사용자의 지갑에 쿠폰을 생성해줘야 합니다.
+즉 <strong>이 모든 과정에 락을 걸어야 하는 것</strong>입니다.</p>
+<p>이렇게 된다면 락을 거는 구간이 길어져서 성능에 불이익이 있을 수밖에 없습니다.
+예를 들어, n초가 걸린다면 n초만큼 계속해서 밀리게 되고 사용자는 밀린 시간만큼 기다려야 합니다.
+따라서 해당 방법도 적절하지 않을 것 같습니다.</p>
+<hr>
+<h2 id="문제-해결---redis-incr-x" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---redis-incr-x" aria-label="문제 해결   redis incr x permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>문제 해결 - Redis INCR <strong>(X)</strong></h2>
+<h3 id="redis의-incr-혹은-decr-명령어" style="position:relative;"><a href="#redis%EC%9D%98-incr-%ED%98%B9%EC%9D%80-decr-%EB%AA%85%EB%A0%B9%EC%96%B4" aria-label="redis의 incr 혹은 decr 명령어 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Redis의 INCR 혹은 DECR 명령어</h3>
+<blockquote>
+<p>INCR 명령어 : 키에 대한 값을 1씩 증가시키는 명령어로 성능도 매우 빠릅니다.<br>
+DECR 명령어 : 키에 대한 값을 1씩 감소시키는 명령어로 성능도 매우 빠릅니다.</p>
+</blockquote>
+<p>Redis는 싱글 스레드이기 때문에, Race Condition도 해결할 수 있습니다.
+또한 저희의 핵심은 쿠폰 개수이므로 쿠폰 개수 정합성만 관리하면 충분합니다.
+때문에 <strong>성능도 매우 빠른</strong> <strong>Redis의 DECR 명령어를 활용해 해결하는 것은 매우 적절</strong>합니다.</p>
+<h4 id="redis-cli-실습" style="position:relative;"><a href="#redis-cli-%EC%8B%A4%EC%8A%B5" aria-label="redis cli 실습 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[redis-cli 실습]</h4>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 28.888888888888886%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAGCAYAAADDl76dAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAhUlEQVQY063QzQ6CMBAEYN5DowEtvwVaqFsVkAvh/d9oyBZiPPLjYQ5z+TK7XmxahPoFX9a4JApXTqrnJAonIXEO89XxymZARr1Db8UD94IQVe+l0z4wpQ+Ees5gaRHVzQGw/QXpP2Bm+++ZQlnwX7kzvhnU3egW8u/45CA3bi33QJrN4AQ/hrGi8ZITGwAAAABJRU5ErkJggg=='); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon3.png"
+        title="coupon3.png"
+        src="/static/013d5820ae4efca062bf60f278d9bfe6/37523/coupon3.png"
+        srcset="/static/013d5820ae4efca062bf60f278d9bfe6/e9ff0/coupon3.png 180w,
+/static/013d5820ae4efca062bf60f278d9bfe6/f21e7/coupon3.png 360w,
+/static/013d5820ae4efca062bf60f278d9bfe6/37523/coupon3.png 720w,
+/static/013d5820ae4efca062bf60f278d9bfe6/302a4/coupon3.png 1080w,
+/static/013d5820ae4efca062bf60f278d9bfe6/b94e3/coupon3.png 1126w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<p>위 이미지처럼 incr 명령어로 값을 1씩 증가시키고 decr 명령어로 값이 1씩 감소하는 것을 살펴볼 수 있습니다.
+이처럼 해당 명령어로 발급된 쿠폰 개수를 제어할 수 있게 되는 것입니다.
+즉, 쿠폰 발급전에 쿠폰 재고를 1 증가시키고 반환되는 값이 100보다 크면 쿠폰 발급을 멈추는 로직을 작성할 수 있습니다.</p>
+<h4 id="흐름" style="position:relative;"><a href="#%ED%9D%90%EB%A6%84" aria-label="흐름 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[흐름]</h4>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 60.55555555555555%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAYAAABiDJ37AAAACXBIWXMAAAsTAAALEwEAmpwYAAACJUlEQVQoz3WS60/aYBTG+/9n9yyafVhc3JYlRsW47cNu8a6JyVRAtEBBCi0UsBdqC73Bb3lfrUOzneSkp0/Pec5zzqkCkI37RK1NJvpXuucFvNoGQaNA0PpOkkREUUyWxnjaF/x6AauygVUpEDQ/S59GtqBhNpuhiGBnd5enz56yuLjA2dlvkiigZ7a5qJRotVpoWoNOx6Br6kTjG+IoxB853PgOI++acRg+JHRdD71tYJg9bMdlOgPDMDk9K9JsNjEMg45hoLc7BEFIHCdY1oCFN2958uI1K2sFclNE8bylaSo7JXGMbdt0u12q1aqMHcchu/seRRFxHBOGIUlyiyEU9vrXbH7b4cfWHnv7B1SrNZksVG1tb3N8fMylqnJaLKNpdVzXlY2jOGY6nZIkyQNBSr/fZ72wwcrqGkvLH6hcXEqVIll2fWQCy7JM+rzl+YoI5k2MkaSpHMWyLEzTpNFoMBgMGA6vCcdj2dAwTVZW11n++In9gyNJKHAlZxcdxXMSRZJYEBweHlEqlbi6ukJVq3INAhcrGQyG7O4d8PPXFueVi78jC5m55wrzbkKl53n0ej1GoxG+798XZo+umXMo80BOKMy2HYrFIuVymZOTE1RVpd1uEwQ3pGmGPxwy9UfMslQeJq//L6FQVKvV0HUdx7YZWha240h8MpnQrGu8fP6KpXfv5futwn8RJgnzh7q/6t2ec8xxXS6rNWp17f7XESP/AUg1hqvtcIkCAAAAAElFTkSuQmCC'); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon4.png"
+        title="coupon4.png"
+        src="/static/00ac516debd4e87054fc9af4f42e702b/37523/coupon4.png"
+        srcset="/static/00ac516debd4e87054fc9af4f42e702b/e9ff0/coupon4.png 180w,
+/static/00ac516debd4e87054fc9af4f42e702b/f21e7/coupon4.png 360w,
+/static/00ac516debd4e87054fc9af4f42e702b/37523/coupon4.png 720w,
+/static/00ac516debd4e87054fc9af4f42e702b/302a4/coupon4.png 1080w,
+/static/00ac516debd4e87054fc9af4f42e702b/21b4d/coupon4.png 1280w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<p>Redis는 싱글-스레드 기반으로 동작하기 때문에,
+위 흐름처럼 클라이언트 A가 INCR 명령어를 실행했다면 클라이언트 B는 해당 명령어 작업이 종료될 때까지 기다렸다가 INCR 명령어를 실행하게 됩니다.
+이처럼 <strong>모든 스레드에서는 언제나 최신값을 가져갈 수 있게 됩니다.</strong></p>
+<h4 id="문제점" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C%EC%A0%90" aria-label="문제점 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[문제점]</h4>
+<p>Redis의 INCR을 사용해, 선착순으로 쿠폰을 발급할 수 있게 하였습니다.
+하지만 이 방식은 높은 트래픽이 발생했을 때, 발생하는 문제점들을 해결하지 못했습니다.
+예를 들어, 이는 선착순 쿠폰 재고가 10_000개이고 선착순 쿠폰 발급 가능 시각이 되어서 10_000명의 사용자가 동시에 선착순 쿠폰 요청을 보냈다고 가정해봅시다.
+이 경우 <strong>10_000개의 쿠폰 저장 쿼리</strong>가 동시에 발생합니다. 이로 인해 데이터베이스에 설정된 1분에 가능한 최대 INSERT 수가 100명이라면 모든 쿼리가 날라가는데, 총 100분이 걸리게 됩니다.
+최악의 경우 데이터베이스의 타임아웃보다 지연시간이 길어져서 쿠폰 저장이 되지 않는 이슈도 발생하게 됩니다.</p>
+<h4 id="해결-방법" style="position:relative;"><a href="#%ED%95%B4%EA%B2%B0-%EB%B0%A9%EB%B2%95" aria-label="해결 방법 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[해결 방법]</h4>
+<p>해결 방법으로는 여러가지가 있을 텐데, 그 중 대표적으로 메시징 큐에 담아 처리하는 방법이 있습니다.
+메시징 큐에 담아 처리하는 방법으로는 Kafka와 RabbitMQ를 사용하면 해결이 가능할 것입니다.
+하지만 <a href="https://hongdosan.tistory.com/374">FCM Token 도입기</a> 포스팅 에서도 말했듯 초기 자원이
+한정적이라 서버 비용 추가 발생 시, 감당이 힘들다는 문제점과 초기 프로젝트임만큼 오버 엔지니어링입니다.
+또한 러닝커브가 높고 현재 사용되는 기술에 있어서 이해와 공부가 먼저라고 생각하여 해당 방법은 고려 대상에서 제외되었습니다.</p>
+<hr>
+<h2 id="문제-해결---redis-queue-system-o" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---redis-queue-system-o" aria-label="문제 해결   redis queue system o permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>문제 해결 - Redis Queue System <strong>(O)</strong></h2>
+<p>앞서 포스팅에 적었던 문제 해결 방식들은 모두 적절하지 않다고 판단했습니다.
+따라서 “쿠폰 발급 요청에 대한 대기열을 만들어서 해결하자.”란 결론을 내리게 되었습니다.</p>
+<h3 id="왜-redis를-선택했을까" style="position:relative;"><a href="#%EC%99%9C-redis%EB%A5%BC-%EC%84%A0%ED%83%9D%ED%96%88%EC%9D%84%EA%B9%8C" aria-label="왜 redis를 선택했을까 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>왜 Redis를 선택했을까?</h3>
+<p>대기열 저장소 선택에 있어서 고려사항은 고성능 처리 기능을 제공해야 해서 Redis를 고려하게 되었습니다.
+또한 저희 모아밤의 한정적인 자원에서 이미 Redis 사용을 기획에 포함시켰기 때문에, Redis 선택은 매우
+적합하다고 생각했습니다. 기술적인 면에서도 Redis는 아래와 같은 근거로 적절하다고 판단했습니다.</p>
+<ul>
+<li>Redis는 이미 많은 서비스에서 사용되는 검증된 저장소입니다.</li>
+<li>Redis는 I/O이 빠른 In-memory 데이터베이스입니다.</li>
+<li>다양한 자료구조 지원으로 요구사항을 쉽게 해결 가능합니다.</li>
+</ul>
+<h3 id="redis의-어떤-명령어와-자료구조를-선택할까" style="position:relative;"><a href="#redis%EC%9D%98-%EC%96%B4%EB%96%A4-%EB%AA%85%EB%A0%B9%EC%96%B4%EC%99%80-%EC%9E%90%EB%A3%8C%EA%B5%AC%EC%A1%B0%EB%A5%BC-%EC%84%A0%ED%83%9D%ED%95%A0%EA%B9%8C" aria-label="redis의 어떤 명령어와 자료구조를 선택할까 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Redis의 어떤 명령어와 자료구조를 선택할까?</h3>
+<h4 id="redis-keys-명령어---x" style="position:relative;"><a href="#redis-keys-%EB%AA%85%EB%A0%B9%EC%96%B4---x" aria-label="redis keys 명령어   x permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[Redis KEYS 명령어] - <strong>X</strong></h4>
+<p>KEYS 명령어는 Full-Scan을 합니다. 그리고 시간복잡도가 O(n)이기 때문에,
+데이터가 많을 수록 성능이 떨어질 수밖에 없습니다. 심지어 Redis는 싱글-스레드이기 때문에 명령어 수행 시
+다른 명령어들은 블락되고 그만큼 지연되어 적절하지 않다고 판단했습니다.</p>
+<h4 id="대기열-redis의-list-자료구조---x" style="position:relative;"><a href="#%EB%8C%80%EA%B8%B0%EC%97%B4-redis%EC%9D%98-list-%EC%9E%90%EB%A3%8C%EA%B5%AC%EC%A1%B0---x" aria-label="대기열 redis의 list 자료구조   x permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[대기열 Redis의 List 자료구조] - <strong>X</strong></h4>
+<p>대기열을 추가하는데 List의 RPUSH와 대기열에서 대상을 가져오는 데 LPOP을 사용할 수 있습니다.
+두 명령어는 O(1)의 시간복잡도로 사용할 수 있습니다. 하지만 문제점이 있습니다.
+List 자료구조의 특정값의 순서를 찾을 수 있는 LPOS 명령어는 순차탐색이 필요하여 O(n)의 시간복잡도가 소요됩니다.
+또한 동일한 사용자가 쿠폰 발급 요청을 했을 때, List 자료구조를 사용하면 새로운 데이터가 계속되어 추가됩니다. 따라서 적절하지 않다고 판단하였습니다.</p>
+<h4 id="대기열---redis의-sorted-set-자료구조---o" style="position:relative;"><a href="#%EB%8C%80%EA%B8%B0%EC%97%B4---redis%EC%9D%98-sorted-set-%EC%9E%90%EB%A3%8C%EA%B5%AC%EC%A1%B0---o" aria-label="대기열   redis의 sorted set 자료구조   o permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[대기열 - Redis의 Sorted Set 자료구조] - <strong>O</strong></h4>
+<p>Sorted Set은 특정 스코어를 기반으로 정렬하여 스코어로 TimeStamp를 사용할 수 있습니다.
+또한 대기열을 추가하고 가져오는데 ZADD 명령어와 ZRANGE 명령어를 사용할 수 있습니다.
+두 명령어의 시간복잡도는 O(log(n))이기 List보다는 느리지만, 이 정도면 충분하다고 생각했습니다.</p>
+<p>추가적으로 Sorted Set 자료구조에서는 특정 순서를 찾기 위해 ZRANK 명령어를 사용할 수 있는데,
+이는 List의 LPOS와는 다르게 O(log(n))으로 더 빠릅니다. 또한 Sorted Set은 ZADD NX 명령어 사용 시,
+데이터가 중복되지 않아 중복 쿠폰 발급 요청이 들어와도 최초 요청 기준으로 대기열을 관리할 수 있습니다.
+이러한 이유로 Sorted Set은 요구사항들을 간단하고 준수한 성능으로 만족시킬 수 있을 거라 판단하여 선택하게 되었습니다.</p>
+<hr>
+<h2 id="redis-sorted-set으로-선착순-쿠폰-발급-시스템-구현하기" style="position:relative;"><a href="#redis-sorted-set%EC%9C%BC%EB%A1%9C-%EC%84%A0%EC%B0%A9%EC%88%9C-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%8B%9C%EC%8A%A4%ED%85%9C-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0" aria-label="redis sorted set으로 선착순 쿠폰 발급 시스템 구현하기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Redis Sorted Set으로 선착순 쿠폰 발급 시스템 구현하기</h2>
+<p>위와 같은 다양한 해결방법을 고민하다가 모아밤에서는 결국 Redis에서 제공하는 Sorted Set을 활용하게 되었습니다. Sorted Set을
+활용해 모든 요청이 바로 Database에 바로 부하가 가지 않고 순서대로 일정 범위만큼씩 처리하는 구성을 하였습니다.</p>
+<h3 id="sorted-set-이란" style="position:relative;"><a href="#sorted-set-%EC%9D%B4%EB%9E%80" aria-label="sorted set 이란 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Sorted Set 이란?</h3>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 56.111111111111114%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAALCAYAAAB/Ca1DAAAACXBIWXMAAAsTAAALEwEAmpwYAAABCklEQVQoz5WT2WrFMAxE8/8f2AtpoM6ehyw3+54pI1BwE0pTgZEty8caLw4ArOuKrutQliWGYcCyLBJj036e50jTDEmSIAxDRFGEL2NkvO87MTiOAw47XNS2LbIsE3BVVeLHcTyB7/db5gkjhEDXdZGm6R3IzrZtMsFGyDzPApqm6fTctO978VTCHHquP4E6uBqr45xuxkqM8fHxesHzPBhj4LqfCIJA5m8V2o3GJELVWHnTNCK9KAqpVKtUO4F2wPZMpvyrMX5VpmPnmnyFskr70DVmy/xxhn8BCVPpGqPUx8An0v8l+Tcob5lv0Pd9uWF54FEkb/N2y0+AdV3LYv0pcRzLT2HMftjfDf1cELt6sU8AAAAASUVORK5CYII='); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon5.png"
+        title="coupon5.png"
+        src="/static/267f8d0eee941538b6a727d28a91257d/37523/coupon5.png"
+        srcset="/static/267f8d0eee941538b6a727d28a91257d/e9ff0/coupon5.png 180w,
+/static/267f8d0eee941538b6a727d28a91257d/f21e7/coupon5.png 360w,
+/static/267f8d0eee941538b6a727d28a91257d/37523/coupon5.png 720w,
+/static/267f8d0eee941538b6a727d28a91257d/302a4/coupon5.png 1080w,
+/static/267f8d0eee941538b6a727d28a91257d/5c744/coupon5.png 1206w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<p>하나의 Key에 여러 Value와 Score를 가지고 있으며 중복되지 않는 Value가 Score 순으로 데이터를 정렬합니다.
+만약 Score가 같으면 Value로 정렬됩니다.</p>
+<h3 id="모아밤에서의-sorted-set-구조" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4%EC%97%90%EC%84%9C%EC%9D%98-sorted-set-%EA%B5%AC%EC%A1%B0" aria-label="모아밤에서의 sorted set 구조 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤에서의 Sorted Set 구조</h3>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 71.11111111111111%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAOCAYAAAAvxDzwAAAACXBIWXMAAAsTAAALEwEAmpwYAAABYklEQVQ4y5WT627CMAyF+/6Pxo8hNBAppVxb7qhIQIEWONOXLSwqhWmWLIMbH59jJ8H9ftf1elVZljbyH3N557fbTefzWUmSaDKZKElSG+fzuRaLhVarlbbbrYI8z7XZbNRoNNTv97Xf75VlmY7HowXAT6eTLpeL1uu1Wq2WPtttdY3RR7OpTqdjPQxDDYdDBXSnACBAaLDb7WwOL4riwRoj99sot5Fm1HI2UI1R5MvkMDnibDbTaDx+SEcujnQUBHT3HQOIYt/4xiiiKFK3a9TrRTLG2DER4zi2DQK/wI/IgJWfw5DFAnE3EtS4GFRZ+BGWHHI5Hxhj3qjx7QnwlfS60RwOB8vU//60lCpLt9FXCnzAJ4bvpDtp/2ZYB8gcq1uvzrh2hu9A3UZhxA0oy8Iy/P5d1m+5DtSXyMXliZmwp9ForDge2OfGXZxOp0rT9G/A6oIAwAc/QLwYgHhBy+VSX2swQVOrQKYJAAAAAElFTkSuQmCC'); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon6.png"
+        title="coupon6.png"
+        src="/static/a921e83ea097e666abd378bca2098ba8/37523/coupon6.png"
+        srcset="/static/a921e83ea097e666abd378bca2098ba8/e9ff0/coupon6.png 180w,
+/static/a921e83ea097e666abd378bca2098ba8/f21e7/coupon6.png 360w,
+/static/a921e83ea097e666abd378bca2098ba8/37523/coupon6.png 720w,
+/static/a921e83ea097e666abd378bca2098ba8/302a4/coupon6.png 1080w,
+/static/a921e83ea097e666abd378bca2098ba8/21b4d/coupon6.png 1280w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<p>모아밤에서는 쿠폰명과 사용자 닉네임이 유니크한 값이기 때문에, Sorted Set의 Key로 쿠폰명으로 하였고
+Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 순서로 정렬하기 위해 쿠폰 발급 요청 시간을
+유닉스타임(m/s) 값으로 선정했습니다.</p>
+<h3 id="모아밤-쿠폰-발급-흐름" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%ED%9D%90%EB%A6%84" aria-label="모아밤 쿠폰 발급 흐름 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤 쿠폰 발급 흐름</h3>
+<p><strong>이해를 위해 재고가 100개인 선착순 쿠폰이 생겼고 1000명이 요청했으며,
+10명의 사용자에 대해 처리한다고 가정해봅시다.</strong></p>
+<p><span
+      class="gatsby-resp-image-wrapper"
+      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
+    >
+      <span
+    class="gatsby-resp-image-background-image"
+    style="padding-bottom: 44.99999999999999%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAJCAYAAAAywQxIAAAACXBIWXMAAAsTAAALEwEAmpwYAAABB0lEQVQoz32SP0vEQBDF90NbWfo5rK5VsLfTQlDORkRBsEuRi4Rkk+y/bJInb2C93HJxYDJhM/nNY96qZVkwjiNY53nGNE2SPLPWwjknNYQgPYxU83eG4o9N0wjEe4+u69D3vWRZlpJFUWAYhhNgyhyqCDLGIA+qpSoO4PcY4wkoB6ZUa+l5I6O3FoOxOBfHXlY+AbU1Kam8v7zA690tZgDeWdln27aiOMMDy3xUmE9OwOfdNarPd5n+U1Wyb66B60gmEv74tMfbx9cGcLVHqQB026I8HATGc5pJE2lWcAZXuxfcPHz/r5A1eIdOa2itRV1d138mrcOHiDFO54E5NL9rW27z2vwCeVe/4nwm5ZMAAAAASUVORK5CYII='); background-size: cover; display: block;"
+  ></span>
+  <img
+        class="gatsby-resp-image-image"
+        alt="coupon7.png"
+        title="coupon7.png"
+        src="/static/c3f2dbfbd172f705e826da43e5187be9/37523/coupon7.png"
+        srcset="/static/c3f2dbfbd172f705e826da43e5187be9/e9ff0/coupon7.png 180w,
+/static/c3f2dbfbd172f705e826da43e5187be9/f21e7/coupon7.png 360w,
+/static/c3f2dbfbd172f705e826da43e5187be9/37523/coupon7.png 720w,
+/static/c3f2dbfbd172f705e826da43e5187be9/302a4/coupon7.png 1080w,
+/static/c3f2dbfbd172f705e826da43e5187be9/21b4d/coupon7.png 1280w"
+        sizes="(max-width: 720px) 100vw, 720px"
+        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
+        loading="lazy"
+        decoding="async"
+      />
+    </span></p>
+<ol>
+<li>1000명의 사용자가 쿠폰 발급 요청을 보냅니다.</li>
+<li>서버는 해당 요청을 바로 처리하지 않고 1000명의 사용자를 Redis의 Sorted Set에 순차적으로 등록합니다.</li>
+<li>서버는 스케쥴러를 통해 정해진 주기마다 대기열에 등록된 사용자 중 10명에 대해 쿠폰 발급이 가능한 지 판단합니다.</li>
+<li>쿠폰 발급이 가능하다면, 해당 10명에게 쿠폰을 발급하고 남은 쿠폰이 없을 때까지 3번부터 다시 반복합니다.</li>
+</ol>
+<h3 id="모아밤-코드" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BD%94%EB%93%9C" aria-label="모아밤 코드 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤 코드</h3>
+<p><strong>1) 대기열 등록</strong></p>
+<ul>
+<li>대기열은 어떤 요청이든 해당 쿠폰이 발급 가능 날짜라면, 대기열에 넣도록 합니다.</li>
+</ul>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">public void registerQueue(Long memberId, String couponName) {
+    double registerTime = System.currentTimeMillis();
+    validateRegisterQueue(couponName);
+    couponManageRepository.addIfAbsentQueue(couponName, memberId, registerTime);
+}
+    
+private void validateRegisterQueue(String couponName) {
+    LocalDate now = clockHolder.date();
+
+    if (!couponRepository.existsByNameAndStartAt(couponName, now)) {
+        throw new BadRequestException(ErrorMessage.INVALID_COUPON_PERIOD);
+    }
+}</code></pre></div>
+<p><strong>2) 쿠폰 발급</strong></p>
+<ul>
+<li>스케줄러를 통해 1초마다 발급 가능한 쿠폰이 있는 지 체크합니다.</li>
+<li>발급 가능한 쿠폰이 있으면, ZRANGE 명령어를 통해 대기열에서 ISSUE_SIZE(10)만큼 꺼내옵니다.</li>
+<li>대기열에서 꺼내온 사용자들이 재고 내에 요청한 사용자들인지 ZRANK 명령어를 통해 확인합니다.</li>
+<li>발급 결과를 각 사용자에게 FCM 알림을 보내서, 실시간으로 알립니다.</li>
+</ul>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">@Scheduled(fixedDelay = 1000)
+public void issue() {
+    LocalDate now = clockHolder.date();
+    Optional&lt;Coupon> optionalCoupon = couponRepository.findByStartAt(now);
+
+    if (optionalCoupon.isEmpty()) {
+        return;
+    }
+
+    Coupon coupon = optionalCoupon.get();
+    String couponName = coupon.getName();
+    int max = coupon.getStock();
+
+    Set&lt;Long> membersId = couponManageRepository.rangeQueue(couponName, current, current + ISSUE_SIZE);
+
+    for (Long memberId : membersId) {
+        int rank = couponManageRepository.rankQueue(couponName, memberId);
+
+        if (max &lt; rank) {
+            notificationService.sendCouponIssueResult(memberId, couponName, FAIL_ISSUE_BODY);
+            continue;
+        }
+
+        couponWalletRepository.save(CouponWallet.create(memberId, coupon));
+        notificationService.sendCouponIssueResult(memberId, couponName, SUCCESS_ISSUE_BODY);
+        current++;
+    }
+}</code></pre></div>
+<h3 id="문제점-1" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C%EC%A0%90-1" aria-label="문제점 1 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>문제점</h3>
+<h4 id="상황" style="position:relative;"><a href="#%EC%83%81%ED%99%A9" aria-label="상황 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[상황]</h4>
+<p>코드를 보면, 대기열 등록과 쿠폰 발급에서 DB에 동일한 요청을 계속해서 보내고 있습니다.</p>
+<h4 id="원인" style="position:relative;"><a href="#%EC%9B%90%EC%9D%B8" aria-label="원인 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[원인]</h4>
+<ul>
+<li>대기열 등록 코드 : 동일한 요청으로 인해, 들어온 요청 수만큼 동일한 쿼리를 DB에 날립니다.</li>
+<li>쿠폰 발급 코드 : 스케줄러로 인해 1초마다 동일한 쿼리를 DB에 날립니다.</li>
+</ul>
+<h4 id="해결" style="position:relative;"><a href="#%ED%95%B4%EA%B2%B0" aria-label="해결 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[해결]</h4>
+<p>현재 쿠폰은 변경 가능성이 매우 적습니다. 또한 동일한 요청을 보내고 별도의 연산 수행없이 동일한 응답값을 받습니다. 따라서 Redis의 Cache 기능을 활용해 성능을 개선할 수 있을 것이라 판단했습니다.</p>
+<p>긴 글 읽어주셔서 감사합니다. 이상으로 포스팅은 여기서 마치고 Redis Cache에 대한 자세한 내용은 모아밤의 <strong>[Redis Cache 기능 도입기]</strong> 포스팅에서 이어나가겠습니다. 😁</p>
+<hr>
+<h2 id="reference" style="position:relative;"><a href="#reference" aria-label="reference permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Reference</h2>
+<ul>
+<li><a href="https://hongdosan.tistory.com/entry/%EB%B2%A1%EC%97%94%EB%93%9C-%EB%8D%B0%EB%B8%8C%EC%BD%94%EC%8A%A4-TIL-%EB%8F%99%EC%8B%9C%EC%84%B1-%EC%9D%B4%EC%8A%88-%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0" title="동시성 이슈 해결하기 - 홍도산">동시성 이슈 해결하기 - 홍도산</a></li>
+<li><a href="https://www.inflearn.com/course/%EC%84%A0%EC%B0%A9%EC%88%9C-%EC%9D%B4%EB%B2%A4%ED%8A%B8-%EC%8B%9C%EC%8A%A4%ED%85%9C-%EC%8B%A4%EC%8A%B5/dashboard">실습으로 배우는 선착순 이벤트 시스템 - 최상용</a></li>
+<li><a href="https://www.youtube.com/watch?v=MTSn93rNPPE&#x26;t=710s">선착순 이벤트 서버 생존기! 47만 RPM에서 살아남다?! - 우아한테크토크 김민국</a></li>
+<li><a href="https://redis.io/docs/data-types/sorted-sets/">Redis Sorted Set - 공식문서</a></li>
+</ul>
+<div class="table-of-contents">
+<ul>
+<li>
+<p><a href="#%EB%B0%B0%EA%B2%BD">배경</a></p>
+<ul>
+<li><a href="#%EC%9A%94%EA%B5%AC%EC%82%AC%ED%95%AD">요구사항</a></li>
+<li><a href="#%EA%B3%A0%EB%AF%BC%EC%82%AC%ED%95%AD">고민사항</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4%EC%9D%98-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98">모아밤의 쿠폰 발급 아키텍처</a></p>
+<ul>
+<li>
+<p><a href="#race-condition-%EC%82%B4%ED%8E%B4%EB%B3%B4%EA%B8%B0">Race Condition 살펴보기</a></p>
+<ul>
+<li><a href="#%EA%B7%B8%EB%A6%BC%EC%9C%BC%EB%A1%9C-%EC%9D%B4%ED%95%B4%ED%95%98%EA%B8%B0">그림으로 이해하기</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---java-x">문제 해결 - Java <strong>(X)</strong></a></p>
+<ul>
+<li><a href="#%EC%9E%90%EB%B0%94%EC%9D%98-synchronized-%ED%82%A4%EC%9B%8C%EB%93%9C-%EC%9D%B4%EC%9A%A9%ED%95%98%EA%B8%B0">자바의 synchronized 키워드 이용하기</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---lock-x">문제 해결 - Lock <strong>(X)</strong></a></p>
+<ul>
+<li><a href="#mysql-lock%EA%B3%BC-redis%EB%A5%BC-%ED%99%9C%EC%9A%A9%ED%95%9C-%EB%B6%84%EC%82%B0%EB%9D%BD%EC%9D%84-%EC%9D%B4%EC%9A%A9%ED%95%98%EA%B8%B0">MySQL Lock과 Redis를 활용한 분산락을 이용하기</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---redis-incr-x">문제 해결 - Redis INCR <strong>(X)</strong></a></p>
+<ul>
+<li>
+<p><a href="#redis%EC%9D%98-incr-%ED%98%B9%EC%9D%80-decr-%EB%AA%85%EB%A0%B9%EC%96%B4">Redis의 INCR 혹은 DECR 명령어</a></p>
+<ul>
+<li><a href="#redis-cli-%EC%8B%A4%EC%8A%B5">[redis-cli 실습]</a></li>
+<li><a href="#%ED%9D%90%EB%A6%84">[흐름]</a></li>
+<li><a href="#%EB%AC%B8%EC%A0%9C%EC%A0%90">[문제점]</a></li>
+<li><a href="#%ED%95%B4%EA%B2%B0-%EB%B0%A9%EB%B2%95">[해결 방법]</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="#%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0---redis-queue-system-o">문제 해결 - Redis Queue System <strong>(O)</strong></a></p>
+<ul>
+<li>
+<p><a href="#%EC%99%9C-redis%EB%A5%BC-%EC%84%A0%ED%83%9D%ED%96%88%EC%9D%84%EA%B9%8C">왜 Redis를 선택했을까?</a></p>
+</li>
+<li>
+<p><a href="#redis%EC%9D%98-%EC%96%B4%EB%96%A4-%EB%AA%85%EB%A0%B9%EC%96%B4%EC%99%80-%EC%9E%90%EB%A3%8C%EA%B5%AC%EC%A1%B0%EB%A5%BC-%EC%84%A0%ED%83%9D%ED%95%A0%EA%B9%8C">Redis의 어떤 명령어와 자료구조를 선택할까?</a></p>
+<ul>
+<li><a href="#redis-keys-%EB%AA%85%EB%A0%B9%EC%96%B4---x">[Redis KEYS 명령어] - <strong>X</strong></a></li>
+<li><a href="#%EB%8C%80%EA%B8%B0%EC%97%B4-redis%EC%9D%98-list-%EC%9E%90%EB%A3%8C%EA%B5%AC%EC%A1%B0---x">[대기열 Redis의 List 자료구조] - <strong>X</strong></a></li>
+<li><a href="#%EB%8C%80%EA%B8%B0%EC%97%B4---redis%EC%9D%98-sorted-set-%EC%9E%90%EB%A3%8C%EA%B5%AC%EC%A1%B0---o">[대기열 - Redis의 Sorted Set 자료구조] - <strong>O</strong></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="#redis-sorted-set%EC%9C%BC%EB%A1%9C-%EC%84%A0%EC%B0%A9%EC%88%9C-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%8B%9C%EC%8A%A4%ED%85%9C-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0">Redis Sorted Set으로 선착순 쿠폰 발급 시스템 구현하기</a></p>
+<ul>
+<li>
+<p><a href="#sorted-set-%EC%9D%B4%EB%9E%80">Sorted Set 이란?</a></p>
+</li>
+<li>
+<p><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4%EC%97%90%EC%84%9C%EC%9D%98-sorted-set-%EA%B5%AC%EC%A1%B0">모아밤에서의 Sorted Set 구조</a></p>
+</li>
+<li>
+<p><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%ED%9D%90%EB%A6%84">모아밤 쿠폰 발급 흐름</a></p>
+</li>
+<li>
+<p><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BD%94%EB%93%9C">모아밤 코드</a></p>
+</li>
+<li>
+<p><a href="#%EB%AC%B8%EC%A0%9C%EC%A0%90-1">문제점</a></p>
+<ul>
+<li><a href="#%EC%83%81%ED%99%A9">[상황]</a></li>
+<li><a href="#%EC%9B%90%EC%9D%B8">[원인]</a></li>
+<li><a href="#%ED%95%B4%EA%B2%B0">[해결]</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="#reference">Reference</a></p>
+</li>
+</ul>
+</div></div></div><div class="post-navigator"><div class="post-navigator-card-wrapper"><a class="post-card prev" href="/exception/"><div class="direction">이전 글</div><div class="title">모아밤의 예외 처리</div></a></div><div class="post-navigator-card-wrapper"></div></div><div class="utterances"></div></main><footer class="page-footer-wrapper"><p class="page-footer">© <!-- -->2023<!-- --> <a href="https://github.com/team-moabam/team-moabam.github.io">모아밤</a> powered by<a href="https://github.com/zoomKoding/zoomkoding-gatsby-blog"> zoomkoding-gatsby-blog</a></p></footer><div class="dark-mode-button-wrapper"><button class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium dark-mode-button css-1yxmbwk" tabindex="0" type="button"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeLarge dark-mode-icon css-6flbmm" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="DarkModeIcon"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"></path></svg></button></div></div></div><div id="gatsby-announcer" style="position:absolute;top:0;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border:0" aria-live="assertive" aria-atomic="true"></div></div><script id="gatsby-script-loader">/*<![CDATA[*/window.pagePath="/coupon-event/";window.___webpackCompilationHash="930eea3e63bd8c639ebb";/*]]>*/</script><script id="gatsby-chunk-mapping">/*<![CDATA[*/window.___chunkMapping={"polyfill":["/polyfill-f196834924f88edde8fc.js"],"app":["/app-7fc3db10bc76b38756df.js"],"component---cache-caches-gatsby-plugin-offline-app-shell-js":["/component---cache-caches-gatsby-plugin-offline-app-shell-js-12b5d8159c7e67968cd6.js"],"component---src-pages-404-js":["/component---src-pages-404-js-29258485103e835516fd.js"],"component---src-pages-about-js":["/component---src-pages-about-js-e85b70281ebbcd61b432.js"],"component---src-pages-index-js":["/component---src-pages-index-js-02698fe531e86750398f.js"],"component---src-templates-blog-template-js":["/component---src-templates-blog-template-js-61e098d23291561f8395.js"],"component---src-templates-category-template-js":["/component---src-templates-category-template-js-addefa15e14ce4af818f.js"]};/*]]>*/</script><script src="/polyfill-f196834924f88edde8fc.js" nomodule=""></script><script src="/app-7fc3db10bc76b38756df.js" async=""></script><script src="/framework-de157c6b30d4790e4e81.js" async=""></script><script src="/webpack-runtime-9505cb96b9deb170536a.js" async=""></script></body></html>

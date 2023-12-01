@@ -296,41 +296,13 @@ List 자료구조의 특정값의 순서를 찾을 수 있는 LPOS 명령어는 
 <p>Sorted Set은 특정 스코어를 기반으로 정렬하여 스코어로 TimeStamp를 사용할 수 있습니다.
 또한 대기열을 추가하고 가져오는데 ZADD 명령어와 ZRANGE 명령어를 사용할 수 있습니다.
 두 명령어의 시간복잡도는 O(log(n))이기 List보다는 느리지만, 이 정도면 충분하다고 생각했습니다.</p>
-<p>추가적으로 Sorted Set 자료구조에서는 특정 순서를 찾기 위해 ZRANK 명령어를 사용할 수 있는데,
-이는 List의 LPOS와는 다르게 O(log(n))으로 더 빠릅니다. 또한 Sorted Set은 ZADD NX 명령어 사용 시,
+<p>추가적으로 Sorted Set 자료구조에서는 Sorted Set은 ZADD NX 명령어 사용 시,
 데이터가 중복되지 않아 중복 쿠폰 발급 요청이 들어와도 최초 요청 기준으로 대기열을 관리할 수 있습니다.
 이러한 이유로 Sorted Set은 요구사항들을 간단하고 준수한 성능으로 만족시킬 수 있을 거라 판단하여 선택하게 되었습니다.</p>
 <hr>
 <h2 id="redis-sorted-set으로-선착순-쿠폰-발급-시스템-구현하기" style="position:relative;"><a href="#redis-sorted-set%EC%9C%BC%EB%A1%9C-%EC%84%A0%EC%B0%A9%EC%88%9C-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%8B%9C%EC%8A%A4%ED%85%9C-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0" aria-label="redis sorted set으로 선착순 쿠폰 발급 시스템 구현하기 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Redis Sorted Set으로 선착순 쿠폰 발급 시스템 구현하기</h2>
-<p>위와 같은 다양한 해결방법을 고민하다가 모아밤에서는 결국 Redis에서 제공하는 Sorted Set을 활용하게 되었습니다. Sorted Set을
-활용해 모든 요청이 바로 Database에 바로 부하가 가지 않고 순서대로 일정 범위만큼씩 처리하는 구성을 하였습니다.</p>
-<h3 id="sorted-set-이란" style="position:relative;"><a href="#sorted-set-%EC%9D%B4%EB%9E%80" aria-label="sorted set 이란 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Sorted Set 이란?</h3>
-<p><span
-      class="gatsby-resp-image-wrapper"
-      style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
-    >
-      <span
-    class="gatsby-resp-image-background-image"
-    style="padding-bottom: 56.111111111111114%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAALCAYAAAB/Ca1DAAAACXBIWXMAAAsTAAALEwEAmpwYAAABCklEQVQoz5WT2WrFMAxE8/8f2AtpoM6ehyw3+54pI1BwE0pTgZEty8caLw4ArOuKrutQliWGYcCyLBJj036e50jTDEmSIAxDRFGEL2NkvO87MTiOAw47XNS2LbIsE3BVVeLHcTyB7/db5gkjhEDXdZGm6R3IzrZtMsFGyDzPApqm6fTctO978VTCHHquP4E6uBqr45xuxkqM8fHxesHzPBhj4LqfCIJA5m8V2o3GJELVWHnTNCK9KAqpVKtUO4F2wPZMpvyrMX5VpmPnmnyFskr70DVmy/xxhn8BCVPpGqPUx8An0v8l+Tcob5lv0Pd9uWF54FEkb/N2y0+AdV3LYv0pcRzLT2HMftjfDf1cELt6sU8AAAAASUVORK5CYII='); background-size: cover; display: block;"
-  ></span>
-  <img
-        class="gatsby-resp-image-image"
-        alt="coupon5.png"
-        title="coupon5.png"
-        src="/static/267f8d0eee941538b6a727d28a91257d/37523/coupon5.png"
-        srcset="/static/267f8d0eee941538b6a727d28a91257d/e9ff0/coupon5.png 180w,
-/static/267f8d0eee941538b6a727d28a91257d/f21e7/coupon5.png 360w,
-/static/267f8d0eee941538b6a727d28a91257d/37523/coupon5.png 720w,
-/static/267f8d0eee941538b6a727d28a91257d/302a4/coupon5.png 1080w,
-/static/267f8d0eee941538b6a727d28a91257d/5c744/coupon5.png 1206w"
-        sizes="(max-width: 720px) 100vw, 720px"
-        style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
-        loading="lazy"
-        decoding="async"
-      />
-    </span></p>
-<p>하나의 Key에 여러 Value와 Score를 가지고 있으며 중복되지 않는 Value가 Score 순으로 데이터를 정렬합니다.
-만약 Score가 같으면 Value로 정렬됩니다.</p>
+<p>위와 같은 다양한 해결방법을 고민하다가 모아밤에서는 결국 Redis에서 제공하는 Sorted Set을 활용하게 되었습니다.
+Sorted Set을 활용해 모든 요청이 바로 Database에 바로 부하가 가지 않고 순서대로 일정 범위만큼씩 처리하도록 구성했습니다.</p>
 <h3 id="모아밤에서의-sorted-set-구조" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4%EC%97%90%EC%84%9C%EC%9D%98-sorted-set-%EA%B5%AC%EC%A1%B0" aria-label="모아밤에서의 sorted set 구조 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤에서의 Sorted Set 구조</h3>
 <p><span
       class="gatsby-resp-image-wrapper"
@@ -338,30 +310,31 @@ List 자료구조의 특정값의 순서를 찾을 수 있는 LPOS 명령어는 
     >
       <span
     class="gatsby-resp-image-background-image"
-    style="padding-bottom: 71.11111111111111%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAOCAYAAAAvxDzwAAAACXBIWXMAAAsTAAALEwEAmpwYAAABYklEQVQ4y5WT627CMAyF+/6Pxo8hNBAppVxb7qhIQIEWONOXLSwqhWmWLIMbH59jJ8H9ftf1elVZljbyH3N557fbTefzWUmSaDKZKElSG+fzuRaLhVarlbbbrYI8z7XZbNRoNNTv97Xf75VlmY7HowXAT6eTLpeL1uu1Wq2WPtttdY3RR7OpTqdjPQxDDYdDBXSnACBAaLDb7WwOL4riwRoj99sot5Fm1HI2UI1R5MvkMDnibDbTaDx+SEcujnQUBHT3HQOIYt/4xiiiKFK3a9TrRTLG2DER4zi2DQK/wI/IgJWfw5DFAnE3EtS4GFRZ+BGWHHI5Hxhj3qjx7QnwlfS60RwOB8vU//60lCpLt9FXCnzAJ4bvpDtp/2ZYB8gcq1uvzrh2hu9A3UZhxA0oy8Iy/P5d1m+5DtSXyMXliZmwp9ForDge2OfGXZxOp0rT9G/A6oIAwAc/QLwYgHhBy+VSX2swQVOrQKYJAAAAAElFTkSuQmCC'); background-size: cover; display: block;"
+    style="padding-bottom: 26.666666666666668%; position: relative; bottom: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAFCAYAAABFA8wzAAAACXBIWXMAAAsTAAALEwEAmpwYAAAApklEQVQY03WQbQ+DIAyE+f//cUYFgh+Mb4BRiN5yzXRkcU2ag/D02qJCCJjnGdR1XZFzxjiOcM7BdR2appG3GCOGYbjP5FhHzloryneFT5zniX3fcRyHGL6qCtoYaK3F5Inz3kvDuq5F+76HIsBkEEop3cW8l0YXR/3HqRK6gp20NrJKOWFpypimCW3bShpjviv/mrL79VfLstzTPHFc2/sg/LZteANdeYPJipQFYAAAAABJRU5ErkJggg=='); background-size: cover; display: block;"
   ></span>
   <img
         class="gatsby-resp-image-image"
-        alt="coupon6.png"
-        title="coupon6.png"
-        src="/static/a921e83ea097e666abd378bca2098ba8/37523/coupon6.png"
-        srcset="/static/a921e83ea097e666abd378bca2098ba8/e9ff0/coupon6.png 180w,
-/static/a921e83ea097e666abd378bca2098ba8/f21e7/coupon6.png 360w,
-/static/a921e83ea097e666abd378bca2098ba8/37523/coupon6.png 720w,
-/static/a921e83ea097e666abd378bca2098ba8/302a4/coupon6.png 1080w,
-/static/a921e83ea097e666abd378bca2098ba8/21b4d/coupon6.png 1280w"
+        alt="coupon8.png"
+        title="coupon8.png"
+        src="/static/0adc4fd89a3a4b356eb7f263d1b3096a/37523/coupon8.png"
+        srcset="/static/0adc4fd89a3a4b356eb7f263d1b3096a/e9ff0/coupon8.png 180w,
+/static/0adc4fd89a3a4b356eb7f263d1b3096a/f21e7/coupon8.png 360w,
+/static/0adc4fd89a3a4b356eb7f263d1b3096a/37523/coupon8.png 720w,
+/static/0adc4fd89a3a4b356eb7f263d1b3096a/302a4/coupon8.png 1080w,
+/static/0adc4fd89a3a4b356eb7f263d1b3096a/21b4d/coupon8.png 1280w"
         sizes="(max-width: 720px) 100vw, 720px"
         style="width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;"
         loading="lazy"
         decoding="async"
       />
     </span></p>
-<p>모아밤에서는 쿠폰명과 사용자 닉네임이 유니크한 값이기 때문에, Sorted Set의 Key로 쿠폰명으로 하였고
-Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 순서로 정렬하기 위해 쿠폰 발급 요청 시간을
-유닉스타임(m/s) 값으로 선정했습니다.</p>
+<p>Sorted Set은 하나의 Key에 여러 Value와 Score를 가지고 있으며 중복되지 않는 Value가 Score 순으로 데이터를
+정렬합니다. 만약 Score가 같으면 Value로 정렬됩니다.</p>
+<p>모아밤에서는 쿠폰명이 유니크한 값이기 때문에, Sorted Set의 Key로 쿠폰명으로 하였고 Value를 사용자
+ID으로 선정했습니다. 마지막으로 Score는 참여 순서로 정렬하기 위해 쿠폰 발급 요청 시간을 유닉스타임(m/s) 값으로
+선정했습니다.</p>
 <h3 id="모아밤-쿠폰-발급-흐름" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%ED%9D%90%EB%A6%84" aria-label="모아밤 쿠폰 발급 흐름 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤 쿠폰 발급 흐름</h3>
-<p><strong>이해를 위해 재고가 100개인 선착순 쿠폰이 생겼고 1000명이 요청했으며,
-10명의 사용자에 대해 처리한다고 가정해봅시다.</strong></p>
+<p><strong>이해를 위해 100명에게 지급하는 선착순 쿠폰이 있고 1000명이 동시에 쿠폰을 요청했다고 가정해봅시다.</strong></p>
 <p><span
       class="gatsby-resp-image-wrapper"
       style="position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 720px; "
@@ -387,35 +360,41 @@ Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 
       />
     </span></p>
 <ol>
-<li>1000명의 사용자가 쿠폰 발급 요청을 보냅니다.</li>
-<li>서버는 해당 요청을 바로 처리하지 않고 1000명의 사용자를 Redis의 Sorted Set에 순차적으로 등록합니다.</li>
-<li>서버는 스케쥴러를 통해 정해진 주기마다 대기열에 등록된 사용자 중 10명에 대해 쿠폰 발급이 가능한 지 판단합니다.</li>
-<li>쿠폰 발급이 가능하다면, 해당 10명에게 쿠폰을 발급하고 남은 쿠폰이 없을 때까지 3번부터 다시 반복합니다.</li>
+<li>1000명의 사용자가 동시에 쿠폰 발급 요청을 보냅니다.</li>
+<li>서버는 해당 요청을 바로 처리하지 않고 대기열의 크기가 100보다 작다면 계속해서 대기열에 등록합니다.</li>
+<li>대기열이 크기가 100과 같거나 크다면 해당 사용자들은 대기열에 등록하지 않습니다.</li>
+<li>서버는 스케쥴러를 통해 정해진 주기마다 대기열에 등록된 사용자 중 10명씩 쿠폰 발급 처리를 진행합니다.</li>
+<li>서버는 선착순 이벤트가 종료되기 전까지 2번부터 다시 반복합니다.</li>
 </ol>
-<h3 id="모아밤-코드" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BD%94%EB%93%9C" aria-label="모아밤 코드 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤 코드</h3>
-<p><strong>1) 대기열 등록</strong></p>
+<h3 id="모아밤-대기열-등록-코드" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EB%8C%80%EA%B8%B0%EC%97%B4-%EB%93%B1%EB%A1%9D-%EC%BD%94%EB%93%9C" aria-label="모아밤 대기열 등록 코드 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤 대기열 등록 코드</h3>
 <ul>
-<li>대기열은 어떤 요청이든 해당 쿠폰이 발급 가능 날짜라면, 대기열에 넣도록 합니다.</li>
+<li>findByNameAndStartAt(…) : 요청이 들어오면 발급 가능한 쿠폰이 있는지 조회합니다.</li>
+<li>sizeQueue(…) : 시간복잡도가 O(1)인 Redis의 <a href="https://redis.io/commands/zcard/">ZCARD</a> 명령으로 대기열 사이즈를 조회합니다.</li>
+<li>sendCouponIssueResult(…) : 선착순 가능 인원보다 대기열 사이즈가 같다면 비동기로 발급 실패 알림을 보냅니다.</li>
+<li>addIfAbsentQueue(…) : 시간복잡도가 O(log(n))인 Redis의 <a href="https://redis.io/commands/zadd/">ZADD NX</a> 명령으로 대기열에 등록합니다.</li>
 </ul>
-<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">registerQueue</span><span class="token punctuation">(</span><span class="token class-name">Long</span> memberId<span class="token punctuation">,</span> <span class="token class-name">String</span> couponName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">registerQueue</span><span class="token punctuation">(</span><span class="token class-name">String</span> couponName<span class="token punctuation">,</span> <span class="token class-name">Long</span> memberId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">double</span> registerTime <span class="token operator">=</span> <span class="token class-name">System</span><span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">validateRegisterQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">validateRegisterQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> memberId<span class="token punctuation">)</span><span class="token punctuation">;</span>
     couponManageRepository<span class="token punctuation">.</span><span class="token function">addIfAbsentQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> memberId<span class="token punctuation">,</span> registerTime<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span>
     
-<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">validateRegisterQueue</span><span class="token punctuation">(</span><span class="token class-name">String</span> couponName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">validateRegisterQueue</span><span class="token punctuation">(</span><span class="token class-name">String</span> couponName<span class="token punctuation">,</span> <span class="token class-name">Long</span> memberId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token class-name">LocalDate</span> now <span class="token operator">=</span> clockHolder<span class="token punctuation">.</span><span class="token function">date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Coupon</span> coupon <span class="token operator">=</span> couponRepository<span class="token punctuation">.</span><span class="token function">findByNameAndStartAt</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> now<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token function">orElseThrow</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token keyword">new</span> <span class="token class-name">BadRequestException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">INVALID_COUPON_PERIOD</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>couponRepository<span class="token punctuation">.</span><span class="token function">existsByNameAndStartAt</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> now<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">BadRequestException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">INVALID_COUPON_PERIOD</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> maxCount <span class="token operator">=</span> coupon<span class="token punctuation">.</span><span class="token function">getMaxCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> sizeQueue <span class="token operator">=</span> couponManageRepository<span class="token punctuation">.</span><span class="token function">sizeQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>maxCount <span class="token operator">==</span> sizeQueue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        notificationService<span class="token punctuation">.</span><span class="token function">sendCouponIssueResult</span><span class="token punctuation">(</span>memberId<span class="token punctuation">,</span> couponName<span class="token punctuation">,</span> <span class="token constant">FAIL_ISSUE_BODY</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">BadRequestException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">INVALID_COUPON_STOCK_END</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span></code></pre></div>
-<p><strong>2) 쿠폰 발급</strong></p>
+<h3 id="모아밤-쿠폰-발급-코드" style="position:relative;"><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%BD%94%EB%93%9C" aria-label="모아밤 쿠폰 발급 코드 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>모아밤 쿠폰 발급 코드</h3>
 <ul>
-<li>스케줄러를 통해 1초마다 발급 가능한 쿠폰이 있는 지 체크합니다.</li>
-<li>발급 가능한 쿠폰이 있으면, ZRANGE 명령어를 통해 대기열에서 ISSUE_SIZE(10)만큼 꺼내옵니다.</li>
-<li>대기열에서 꺼내온 사용자들이 재고 내에 요청한 사용자들인지 ZRANK 명령어를 통해 확인합니다.</li>
-<li>발급 결과를 각 사용자에게 FCM 알림을 보내서, 실시간으로 알립니다.</li>
+<li>findByStartAt(…) : 스케줄러를 통해 1초마다 발급 가능한 쿠폰이 있는 지 체크합니다.</li>
 </ul>
 <div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>fixedDelay <span class="token operator">=</span> <span class="token number">1000</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">issue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -425,37 +404,73 @@ Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 
     <span class="token keyword">if</span> <span class="token punctuation">(</span>optionalCoupon<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token keyword">return</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
+    
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span></code></pre></div>
+<ul>
+<li>getCount(…) : 시간복잡도가 O(1)인 Redis의 <a href="https://redis.io/commands/get/">GET</a> 명령을 통해 현재 발급 갯수를 조회하고 선착순 가능</li>
+</ul>
+<p>인원과 비교하여 발급이 가능한지 체크합니다.</p>
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>fixedDelay <span class="token operator">=</span> <span class="token number">1000</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">issue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    
+    <span class="token keyword">int</span> maxCount <span class="token operator">=</span> coupon<span class="token punctuation">.</span><span class="token function">getMaxCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> currentCount <span class="token operator">=</span> couponManageRepository<span class="token punctuation">.</span><span class="token function">getCount</span><span class="token punctuation">(</span>couponName<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token class-name">Coupon</span> coupon <span class="token operator">=</span> optionalCoupon<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token class-name">String</span> couponName <span class="token operator">=</span> coupon<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">int</span> max <span class="token operator">=</span> coupon<span class="token punctuation">.</span><span class="token function">getStock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>maxCount <span class="token operator">&lt;=</span> currentCount<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span></code></pre></div>
+<ul>
+<li>rangeQueue(…) : 시간복잡도가 O(log(n) + m)인 Redis의 <a href="https://redis.io/commands/zrange/">ZRANGE</a> 명령을 통해 대기열에서</li>
+</ul>
+<p>10명을 조회 후 쿠폰 발급을 진행합니다.</p>
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>fixedDelay <span class="token operator">=</span> <span class="token number">1000</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">issue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
 
-    <span class="token class-name">Set</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">></span></span> membersId <span class="token operator">=</span> couponManageRepository<span class="token punctuation">.</span><span class="token function">rangeQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> current<span class="token punctuation">,</span> current <span class="token operator">+</span> <span class="token constant">ISSUE_SIZE</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    
+    <span class="token class-name">Set</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">></span></span> membersId <span class="token operator">=</span> couponManageRepository<span class="token punctuation">.</span><span class="token function">rangeQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> currentCount<span class="token punctuation">,</span> currentCount <span class="token operator">+</span> <span class="token constant">ISSUE_SIZE</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
     <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Long</span> memberId <span class="token operator">:</span> membersId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-        <span class="token keyword">int</span> rank <span class="token operator">=</span> couponManageRepository<span class="token punctuation">.</span><span class="token function">rankQueue</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> memberId<span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-        <span class="token keyword">if</span> <span class="token punctuation">(</span>max <span class="token operator">&lt;</span> rank<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-            notificationService<span class="token punctuation">.</span><span class="token function">sendCouponIssueResult</span><span class="token punctuation">(</span>memberId<span class="token punctuation">,</span> couponName<span class="token punctuation">,</span> <span class="token constant">FAIL_ISSUE_BODY</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-            <span class="token keyword">continue</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
-
         couponWalletRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span><span class="token class-name">CouponWallet</span><span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>memberId<span class="token punctuation">,</span> coupon<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         notificationService<span class="token punctuation">.</span><span class="token function">sendCouponIssueResult</span><span class="token punctuation">(</span>memberId<span class="token punctuation">,</span> couponName<span class="token punctuation">,</span> <span class="token constant">SUCCESS_ISSUE_BODY</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-        current<span class="token operator">++</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
+    
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
 <span class="token punctuation">}</span></code></pre></div>
+<ul>
+<li>increase(…) : 시간복잡도가 O(1)인 Redis의 <a href="https://redis.io/commands/incrby/">INCRBY</a></li>
+</ul>
+<p>명령어를 통해 발급 횟수만큼 현재 발급 갯수를 증가시켜줍니다.</p>
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>fixedDelay <span class="token operator">=</span> <span class="token number">1000</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">issue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    
+    couponManageRepository<span class="token punctuation">.</span><span class="token function">increase</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> membersId<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre></div>
+<br/>
 <h3 id="문제점-1" style="position:relative;"><a href="#%EB%AC%B8%EC%A0%9C%EC%A0%90-1" aria-label="문제점 1 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>문제점</h3>
 <p><strong>[상황]</strong></p>
-<p>코드를 보면, 대기열 등록과 쿠폰 발급에서 DB에 동일한 요청을 계속해서 보내고 있습니다.</p>
+<p>코드를 보면, 대기열 등록에서와 쿠폰 발급에서 아래 명령을 통해 DB에 동일한 요청을 계속해서 보내고 있습니다.
+즉 불필요한 쿼리가 발생하고 최악의 경우 성능이 저하됩니다.</p>
+<div class="gatsby-highlight" data-language="java"><pre class="language-java"><code class="language-java"><span class="token comment">// 대기열 등록의 동일한 요청</span>
+<span class="token class-name">Coupon</span> coupon <span class="token operator">=</span> couponRepository<span class="token punctuation">.</span><span class="token function">findByNameAndStartAt</span><span class="token punctuation">(</span>couponName<span class="token punctuation">,</span> now<span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">orElseThrow</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token keyword">new</span> <span class="token class-name">BadRequestException</span><span class="token punctuation">(</span><span class="token class-name">ErrorMessage</span><span class="token punctuation">.</span><span class="token constant">INVALID_COUPON_PERIOD</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+<span class="token comment">// 쿠폰 발급의 동일한 요청</span>
+<span class="token class-name">Optional</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Coupon</span><span class="token punctuation">></span></span> optionalCoupon <span class="token operator">=</span> couponRepository<span class="token punctuation">.</span><span class="token function">findByStartAt</span><span class="token punctuation">(</span>now<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre></div>
 <p><strong>[원인]</strong></p>
 <ul>
-<li>대기열 등록 코드 : 동일한 요청으로 인해, 들어온 요청 수만큼 동일한 쿼리를 DB에날립니다.</li>
-<li>쿠폰 발급 코드 : 스케줄러로 인해 1초마다 동일한 쿼리를 DB에 날립니다.</li>
+<li>대기열 등록 : 사용자들이 쿠폰 발급을 위해 동일한 요청이 단기간에 날라옵니다.</li>
+<li>쿠폰 발급 : 스케줄러로 인해 1초마다 동일한 쿼리가 계속 발생합니다.</li>
 </ul>
 <p><strong>[해결]</strong></p>
-<p>현재 쿠폰은 변경 가능성이 매우 적습니다. 또한 동일한 요청을 보내고별도의 연산 수행없이 동일한 응답값을 받습니다. 따라서 Redis의 Cache 기능을 활용해 성능을 개선할 수 있을 것이라 판단했습니다.</p>
-<br/>
+<p>현재 쿠폰은 변경 가능성이 없다고 봐도 무방합니다. 또한 동일한 요청을 보내고 별도의 연산 수행없이 동일한
+응답값을 받습니다. 따라서 Redis의 Cache 기능을 활용해 성능을 개선할 수 있을 것이라 판단했습니다.</p>
 <p>긴 글 읽어주셔서 감사합니다. 이상으로 포스팅은 여기서 마치고 Redis Cache에 대한 자세한 내용은 모아밤의 <strong>[Redis Cache 기능 도입기]</strong> 포스팅에서 이어나가겠습니다. 😁</p>
 <hr>
 <h2 id="reference" style="position:relative;"><a href="#reference" aria-label="reference permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Reference</h2>
@@ -511,10 +526,10 @@ Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 
 <li>
 <p><a href="#redis-sorted-set%EC%9C%BC%EB%A1%9C-%EC%84%A0%EC%B0%A9%EC%88%9C-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%8B%9C%EC%8A%A4%ED%85%9C-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0">Redis Sorted Set으로 선착순 쿠폰 발급 시스템 구현하기</a></p>
 <ul>
-<li><a href="#sorted-set-%EC%9D%B4%EB%9E%80">Sorted Set 이란?</a></li>
 <li><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4%EC%97%90%EC%84%9C%EC%9D%98-sorted-set-%EA%B5%AC%EC%A1%B0">모아밤에서의 Sorted Set 구조</a></li>
 <li><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%ED%9D%90%EB%A6%84">모아밤 쿠폰 발급 흐름</a></li>
-<li><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BD%94%EB%93%9C">모아밤 코드</a></li>
+<li><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EB%8C%80%EA%B8%B0%EC%97%B4-%EB%93%B1%EB%A1%9D-%EC%BD%94%EB%93%9C">모아밤 대기열 등록 코드</a></li>
+<li><a href="#%EB%AA%A8%EC%95%84%EB%B0%A4-%EC%BF%A0%ED%8F%B0-%EB%B0%9C%EA%B8%89-%EC%BD%94%EB%93%9C">모아밤 쿠폰 발급 코드</a></li>
 <li><a href="#%EB%AC%B8%EC%A0%9C%EC%A0%90-1">문제점</a></li>
 </ul>
 </li>

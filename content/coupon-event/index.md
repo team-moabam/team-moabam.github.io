@@ -193,12 +193,11 @@ List 자료구조의 특정값의 순서를 찾을 수 있는 LPOS 명령어는 
 
 **[대기열 - Redis의 Sorted Set 자료구조] - O**
 
-Sorted Set은 특정 스코어를 기반으로 정렬하여 스코어로 TimeStamp를 사용할 수 있습니다. 
+Sorted Set은 특정 스코어를 기반으로 정렬하여 스코어로 TimeStamp를 사용할 수 있습니다.
 또한 대기열을 추가하고 가져오는데 ZADD 명령어와 ZRANGE 명령어를 사용할 수 있습니다. 
 두 명령어의 시간복잡도는 O(log(n))이기 List보다는 느리지만, 이 정도면 충분하다고 생각했습니다.
 
-추가적으로 Sorted Set 자료구조에서는 특정 순서를 찾기 위해 ZRANK 명령어를 사용할 수 있는데, 
-이는 List의 LPOS와는 다르게 O(log(n))으로 더 빠릅니다. 또한 Sorted Set은 ZADD NX 명령어 사용 시, 
+추가적으로 Sorted Set 자료구조에서는 Sorted Set은 ZADD NX 명령어 사용 시, 
 데이터가 중복되지 않아 중복 쿠폰 발급 요청이 들어와도 최초 요청 기준으로 대기열을 관리할 수 있습니다. 
 이러한 이유로 Sorted Set은 요구사항들을 간단하고 준수한 성능으로 만족시킬 수 있을 거라 판단하여 선택하게 되었습니다.
 
@@ -206,64 +205,64 @@ Sorted Set은 특정 스코어를 기반으로 정렬하여 스코어로 TimeSta
 
 ## Redis Sorted Set으로 선착순 쿠폰 발급 시스템 구현하기
 
-위와 같은 다양한 해결방법을 고민하다가 모아밤에서는 결국 Redis에서 제공하는 Sorted Set을 활용하게 되었습니다. Sorted Set을 
-활용해 모든 요청이 바로 Database에 바로 부하가 가지 않고 순서대로 일정 범위만큼씩 처리하는 구성을 하였습니다.
-
-### Sorted Set 이란?
-
-![coupon5.png](coupon5.png)
-
-하나의 Key에 여러 Value와 Score를 가지고 있으며 중복되지 않는 Value가 Score 순으로 데이터를 정렬합니다. 
-만약 Score가 같으면 Value로 정렬됩니다.
+위와 같은 다양한 해결방법을 고민하다가 모아밤에서는 결국 Redis에서 제공하는 Sorted Set을 활용하게 되었습니다. 
+Sorted Set을 활용해 모든 요청이 바로 Database에 바로 부하가 가지 않고 순서대로 일정 범위만큼씩 처리하도록 구성했습니다.
 
 ### 모아밤에서의 Sorted Set 구조
 
-![coupon6.png](coupon6.png)
+![coupon8.png](coupon8.png)
 
-모아밤에서는 쿠폰명과 사용자 닉네임이 유니크한 값이기 때문에, Sorted Set의 Key로 쿠폰명으로 하였고 
-Value를 사용자 ID으로 선정했습니다. 마지막으로 Score는 참여 순서로 정렬하기 위해 쿠폰 발급 요청 시간을 
-유닉스타임(m/s) 값으로 선정했습니다.
+Sorted Set은 하나의 Key에 여러 Value와 Score를 가지고 있으며 중복되지 않는 Value가 Score 순으로 데이터를 
+정렬합니다. 만약 Score가 같으면 Value로 정렬됩니다.
+
+모아밤에서는 쿠폰명이 유니크한 값이기 때문에, Sorted Set의 Key로 쿠폰명으로 하였고 Value를 사용자 
+ID으로 선정했습니다. 마지막으로 Score는 참여 순서로 정렬하기 위해 쿠폰 발급 요청 시간을 유닉스타임(m/s) 값으로 
+선정했습니다.
 
 ### 모아밤 쿠폰 발급 흐름
 
-**이해를 위해 재고가 100개인 선착순 쿠폰이 생겼고 1000명이 요청했으며, 
-10명의 사용자에 대해 처리한다고 가정해봅시다.**
+**이해를 위해 100명에게 지급하는 선착순 쿠폰이 있고 1000명이 동시에 쿠폰을 요청했다고 가정해봅시다.**
 
 ![coupon7.png](coupon7.png)
 
-1.  1000명의 사용자가 쿠폰 발급 요청을 보냅니다.
-2.  서버는 해당 요청을 바로 처리하지 않고 1000명의 사용자를 Redis의 Sorted Set에 순차적으로 등록합니다.
-3.  서버는 스케쥴러를 통해 정해진 주기마다 대기열에 등록된 사용자 중 10명에 대해 쿠폰 발급이 가능한 지 판단합니다.
-4.  쿠폰 발급이 가능하다면, 해당 10명에게 쿠폰을 발급하고 남은 쿠폰이 없을 때까지 3번부터 다시 반복합니다.
+1.  1000명의 사용자가 동시에 쿠폰 발급 요청을 보냅니다.
+2.  서버는 해당 요청을 바로 처리하지 않고 대기열의 크기가 100보다 작다면 계속해서 대기열에 등록합니다.
+3.  대기열이 크기가 100과 같거나 크다면 해당 사용자들은 대기열에 등록하지 않습니다.
+4.  서버는 스케쥴러를 통해 정해진 주기마다 대기열에 등록된 사용자 중 10명씩 쿠폰 발급 처리를 진행합니다.
+5.  서버는 선착순 이벤트가 종료되기 전까지 2번부터 다시 반복합니다.
 
-### 모아밤 코드
+### 모아밤 대기열 등록 코드
 
-**1) 대기열 등록**
-
--   대기열은 어떤 요청이든 해당 쿠폰이 발급 가능 날짜라면, 대기열에 넣도록 합니다.
+-   findByNameAndStartAt(...) : 요청이 들어오면 발급 가능한 쿠폰이 있는지 조회합니다.
+-   sizeQueue(...) : 시간복잡도가 O(1)인 Redis의 [ZCARD](https://redis.io/commands/zcard/) 명령으로 대기열 사이즈를 조회합니다.
+-   sendCouponIssueResult(...) : 선착순 가능 인원보다 대기열 사이즈가 같다면 비동기로 발급 실패 알림을 보냅니다.
+-   addIfAbsentQueue(...) : 시간복잡도가 O(log(n))인 Redis의 [ZADD NX](https://redis.io/commands/zadd/) 명령으로 대기열에 등록합니다.
 
 ``` java
-public void registerQueue(Long memberId, String couponName) {
+public void registerQueue(String couponName, Long memberId) {
     double registerTime = System.currentTimeMillis();
-    validateRegisterQueue(couponName);
+    validateRegisterQueue(couponName, memberId);
     couponManageRepository.addIfAbsentQueue(couponName, memberId, registerTime);
 }
     
-private void validateRegisterQueue(String couponName) {
+private void validateRegisterQueue(String couponName, Long memberId) {
     LocalDate now = clockHolder.date();
+    Coupon coupon = couponRepository.findByNameAndStartAt(couponName, now)
+        .orElseThrow(() -> new BadRequestException(ErrorMessage.INVALID_COUPON_PERIOD));
 
-    if (!couponRepository.existsByNameAndStartAt(couponName, now)) {
-        throw new BadRequestException(ErrorMessage.INVALID_COUPON_PERIOD);
+    int maxCount = coupon.getMaxCount();
+    int sizeQueue = couponManageRepository.sizeQueue(couponName);
+
+    if (maxCount == sizeQueue) {
+        notificationService.sendCouponIssueResult(memberId, couponName, FAIL_ISSUE_BODY);
+        throw new BadRequestException(ErrorMessage.INVALID_COUPON_STOCK_END);
     }
 }
 ```
 
-**2) 쿠폰 발급**
+### 모아밤 쿠폰 발급 코드
 
--   스케줄러를 통해 1초마다 발급 가능한 쿠폰이 있는 지 체크합니다.
--   발급 가능한 쿠폰이 있으면, ZRANGE 명령어를 통해 대기열에서 ISSUE\_SIZE(10)만큼 꺼내옵니다.
--   대기열에서 꺼내온 사용자들이 재고 내에 요청한 사용자들인지 ZRANK 명령어를 통해 확인합니다.
--   발급 결과를 각 사용자에게 FCM 알림을 보내서, 실시간으로 알립니다.
+-   findByStartAt(...) : 스케줄러를 통해 1초마다 발급 가능한 쿠폰이 있는 지 체크합니다.
 
 ``` java
 @Scheduled(fixedDelay = 1000)
@@ -274,44 +273,89 @@ public void issue() {
     if (optionalCoupon.isEmpty()) {
         return;
     }
-
-    Coupon coupon = optionalCoupon.get();
-    String couponName = coupon.getName();
-    int max = coupon.getStock();
-
-    Set<Long> membersId = couponManageRepository.rangeQueue(couponName, current, current + ISSUE_SIZE);
-
-    for (Long memberId : membersId) {
-        int rank = couponManageRepository.rankQueue(couponName, memberId);
-
-        if (max < rank) {
-            notificationService.sendCouponIssueResult(memberId, couponName, FAIL_ISSUE_BODY);
-            continue;
-        }
-
-        couponWalletRepository.save(CouponWallet.create(memberId, coupon));
-        notificationService.sendCouponIssueResult(memberId, couponName, SUCCESS_ISSUE_BODY);
-        current++;
-    }
+    
+    ...
 }
 ```
+
+- getCount(...) : 시간복잡도가 O(1)인 Redis의 [GET](https://redis.io/commands/get/) 명령을 통해 현재 발급 갯수를 조회하고 선착순 가능 
+인원과 비교하여 발급이 가능한지 체크합니다.
+
+``` java
+@Scheduled(fixedDelay = 1000)
+public void issue() {
+    ...
+    
+    int maxCount = coupon.getMaxCount();
+    int currentCount = couponManageRepository.getCount(couponName);
+
+    if (maxCount <= currentCount) {
+        return;
+    }
+    
+    ...
+}
+```
+
+- rangeQueue(...) : 시간복잡도가 O(log(n) + m)인 Redis의 [ZRANGE](https://redis.io/commands/zrange/) 명령을 통해 대기열에서 
+10명을 조회 후 쿠폰 발급을 진행합니다.
+
+``` java
+@Scheduled(fixedDelay = 1000)
+public void issue() {
+
+    ...
+    
+    Set<Long> membersId = couponManageRepository.rangeQueue(couponName, currentCount, currentCount + ISSUE_SIZE);
+    
+    for (Long memberId : membersId) {
+        couponWalletRepository.save(CouponWallet.create(memberId, coupon));
+        notificationService.sendCouponIssueResult(memberId, couponName, SUCCESS_ISSUE_BODY);
+    }
+    
+    ...
+}
+```
+
+- increase(...) : 시간복잡도가 O(1)인 Redis의 [INCRBY](https://redis.io/commands/incrby/) 
+명령어를 통해 발급 횟수만큼 현재 발급 갯수를 증가시켜줍니다.
+
+``` java
+@Scheduled(fixedDelay = 1000)
+public void issue() {
+    ...
+    
+    couponManageRepository.increase(couponName, membersId.size());
+}
+```
+
+<br/>
 
 ### 문제점
 
 **[상황]**
 
-코드를 보면, 대기열 등록과 쿠폰 발급에서 DB에 동일한 요청을 계속해서 보내고 있습니다.
+코드를 보면, 대기열 등록에서와 쿠폰 발급에서 아래 명령을 통해 DB에 동일한 요청을 계속해서 보내고 있습니다. 
+즉 불필요한 쿼리가 발생하고 최악의 경우 성능이 저하됩니다.
+
+``` java
+// 대기열 등록의 동일한 요청
+Coupon coupon = couponRepository.findByNameAndStartAt(couponName, now)
+    .orElseThrow(() -> new BadRequestException(ErrorMessage.INVALID_COUPON_PERIOD));
+    
+// 쿠폰 발급의 동일한 요청
+Optional<Coupon> optionalCoupon = couponRepository.findByStartAt(now);
+```
 
 **[원인]**
 
--   대기열 등록 코드 : 동일한 요청으로 인해, 들어온 요청 수만큼 동일한 쿼리를 DB에날립니다.
--   쿠폰 발급 코드 : 스케줄러로 인해 1초마다 동일한 쿼리를 DB에 날립니다.
+-   대기열 등록 : 사용자들이 쿠폰 발급을 위해 동일한 요청이 단기간에 날라옵니다.
+-   쿠폰 발급 : 스케줄러로 인해 1초마다 동일한 쿼리가 계속 발생합니다.
 
 **[해결]**
 
-현재 쿠폰은 변경 가능성이 매우 적습니다. 또한 동일한 요청을 보내고별도의 연산 수행없이 동일한 응답값을 받습니다. 따라서 Redis의 Cache 기능을 활용해 성능을 개선할 수 있을 것이라 판단했습니다.
-
-<br/>
+현재 쿠폰은 변경 가능성이 없다고 봐도 무방합니다. 또한 동일한 요청을 보내고 별도의 연산 수행없이 동일한 
+응답값을 받습니다. 따라서 Redis의 Cache 기능을 활용해 성능을 개선할 수 있을 것이라 판단했습니다.
 
 긴 글 읽어주셔서 감사합니다. 이상으로 포스팅은 여기서 마치고 Redis Cache에 대한 자세한 내용은 모아밤의 **\[Redis Cache 기능 도입기\]** 포스팅에서 이어나가겠습니다. 😁
 

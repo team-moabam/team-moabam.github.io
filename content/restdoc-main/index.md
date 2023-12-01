@@ -493,12 +493,12 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">개발(dev)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="">dev-api.moabam.com</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="">dev.moabam.com</a></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">운영(prod)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="">api.moabam.com</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="">www.moabam.com</a></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>

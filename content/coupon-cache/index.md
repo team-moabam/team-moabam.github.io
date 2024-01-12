@@ -12,21 +12,21 @@ categories: Tech
 
 ---
 
-# 개요
+## 개요
 
-### 문제
+#### 문제
 
 현재 모아밤 서비스의 문제점은 
 [Moabam Tech - 실시간 선착순 쿠폰 이벤트 도입기](https://hongdosan.tistory.com/376) 포스팅을 보면 알 수 있듯 
 대기열 등록 및 쿠폰 발급 부분에서 DB에 동일한 요청을 계속해서 보내고 있습니다. 
 즉 불필요한 쿼리가 발생하고 있습니다.
 
-### 원인
+#### 원인
 
 사용자들이 선착순 쿠폰 발급을 위해 쿠폰 발급 요청을 하기 때문에, 
 단기간에 동일한 요청이 여러번 발생합니다. 또한 스케줄러로 인해 1초마다 동일한 쿼리가 발생합니다.
 
-### 해결
+#### 해결
 
 현재 모아밤 서비스는 쿠폰 정보 변경 가능성이 없다고 봐도 무방합니다. 
 또한 동일한 요청을 보내고 별도 연산없이 동일한 응답값을 보내고 있습니다. 
@@ -34,7 +34,7 @@ categories: Tech
 
 ---
 
-# 캐시란 무엇일까?
+## 캐시란 무엇일까?
 
 캐시는 **값비싼 연산 결과 또는 자주 참조되는 데이터를 메모리 안에 두고, 
 뒤이은 요청이 보다 빨리 처리될 수 있도록 하는 저장소**입니다. 
@@ -53,10 +53,12 @@ categories: Tech
 
 ---
 
-# 어떤 점을 고려해야 할까?
+## 어떤 점을 고려해야 할까?
 
 캐시를 사용하기 위해서 여러 고민사항이 있는데, 모아밤이 현재 큰 서비스는 아니기 때문에, 
 아래에 정리한 3가지를 고민해봤습니다.
+
+<br/>
 
 ### 1. 캐시에 저장할 쿠폰 정보 데이터는 어떻게 만료할 것인가?
 
@@ -64,10 +66,14 @@ categories: Tech
 이로 인해 쿠폰 발급에 문제가 발생할 것입니다. 또한 만료 기한이 너무 짧으면 데이터베이스를 
 자주 읽기 때문에 곤란합니다.
 
+<br/>
+
 ### 2. 장애에는 어떻게 대처할 것인가?
 
 사실 캐시 서버를 한 대만 두는 경우 해당 서버는 단일 장애 지점(SPOF)이 되어버릴 가능성이
 있습니다.
+
+<br/>
 
 ### 3. Local Cache와 Global Cache 중 어떤 것을 선택할 것인가?
 
@@ -88,10 +94,14 @@ categories: Tech
 를 들어, 최초 요청이 들어왔을 때, 00시에서 해당 요청 시간을 뺀 값으로 만료시간을 
 정하면 될 것 같습니다.
 
+<br/>
+
 ### 2. 장애에는 어떻게 대처할 것인가?
 
 현재 모아밤의 자원은 한정적입니다. 어쩔 수 없이 SPOF를 감안하고 캐시 서버는 한 대로 진
 행해야 할 것 같습니다.
+
+<br/>
 
 ### 3. Local Cache와 Global Cache 중 어떤 것을 선택할 것인가?
 
@@ -102,13 +112,13 @@ categories: Tech
 
 ---
 
-# Redis로 캐싱 구현하기
+## Redis로 캐싱 구현하기
 
 ### 캐싱에 필요한 설정 및 만료 정책 코드
 
--   **redisCacheConfiguration()** : 원하는 TTL과 직렬화 전략을 설정했습니다.
--   **getTtl()** : TTL을 반환합니다. 이는 00시 기준으로 요청 시각을 뺀 값입니다.
--   **objectMapper()** : Jackson2는 LocalDate 타입을 인식하지 못하기 때문에, 그에 따른 에러 방지 설정
+-   redisCacheConfiguration() : 원하는 TTL과 직렬화 전략을 설정했습니다.
+-   getTtl() : TTL을 반환합니다. 이는 00시 기준으로 요청 시각을 뺀 값입니다.
+-   objectMapper() : Jackson2는 LocalDate 타입을 인식하지 못하기 때문에, 그에 따른 에러 방지 설정
 
 ``` java
 @EnableCaching
@@ -153,8 +163,8 @@ public class CacheConfig {
 
 ### 캐시 서비스 코드
 
--   **getByNameAndStartAt(...)** : 쿠폰 발급 요청 시, 요청된 쿠폰 정보 캐싱
--   **getByStartAt(...)** : 쿠폰 발급 대기열 처리 시, 해당 쿠폰 정보 캐싱
+-   getByNameAndStartAt(...) : 쿠폰 발급 요청 시, 요청된 쿠폰 정보 캐싱
+-   getByStartAt(...) : 쿠폰 발급 대기열 처리 시, 해당 쿠폰 정보 캐싱
 
 ``` java
 @Service
@@ -183,7 +193,7 @@ public class CouponCacheService {
 
 ---
 
-# Reference
+## Reference
 
 -   [Spring Expression Language Guide - Baeldung](https://www.baeldung.com/spring-expression-language)
 -   [Spring Boot Cache with Redis - Baeldung](https://www.baeldung.com/spring-boot-redis-cache)

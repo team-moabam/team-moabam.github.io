@@ -189,7 +189,19 @@ public class CouponCacheService {
 
 ---
 
-이로 인해, `실시간 선착순 쿠폰 이벤트 도입기`의 문제점들을 모두 해결했습니다. 긴 글 읽어주셔서 감사합니다. 이상으로 포스팅은 여기서 마치도록 하겠습니다.
+## 단일 장애점 (SPOF; Single Point Of Failure)
+
+#### [상황]
+
+위 Redis 캐싱 서버 구축으로 `실시간 선착순 쿠폰 이벤트 도입기`의 문제점은 해결했지만, 캐시 서버 장애 시, 서비스 장애로 이어집니다. 때문에, 캐시 서버 장애가 발생하면 데이터베이스를 직접 조회하는 방안이 있습니다. 하지만 이 해결 방안도 결국 데이터베이스 부하가 생기기 때문에, 데이터베이스 서버 장애로 이어질 수 있습니다.
+
+#### [해결]
+
+지금 당장 생각해본 방법으론 로컬 캐시를 추가하여, Redis 캐시 장애가 발생 시, 로컬 캐시를 접근하도록 하여 해결하면 될 것 같습니다.
+
+---
+
+긴 글 읽어주셔서 감사합니다. 이상으로 포스팅은 여기서 마치고 단일 장애 지점 해결 방안의 자세한 내용은 모아밤의 `캐시 서버로 인한 단일 장애 지점 - (작성중)` 포스팅에서 이어나가겠습니다. 😁
 
 ---
 
@@ -199,7 +211,7 @@ public class CouponCacheService {
 -   [Spring Boot Cache with Redis - Baeldung](https://www.baeldung.com/spring-boot-redis-cache)
 -   [Redis Cache - 공식 문서](https://docs.spring.io/spring-data-redis/reference/redis/redis-cache.html)
 -   [JCache Annotations - 공식 문서](https://docs.spring.io/spring-framework/reference/integration/cache/jsr-107.html)
--    가상 면접 사례로 배우는 대규모 시스템 설계 기초 - 알렉스 쉬 지음, 이병준 옮김
+-   가상 면접 사례로 배우는 대규모 시스템 설계 기초 - 알렉스 쉬 지음, 이병준 옮김
 
 ```toc
 ```

@@ -7,6 +7,8 @@ tags: Funnel
 categories: Tech
 ---
 
+안녕하세요. 모아밤 팀의 프론트엔드 개발자 이상훈입니다.
+
 ## 서론
 
 ![순차적인 페이지 흐름](image.png)
@@ -54,15 +56,15 @@ Step 컴포넌트는 아주 간단한 역할을 수행합니다.
 
 ```tsx
 export interface StepProps<T extends readonly string[]> {
-  name: T[number]
-  children: React.ReactNode
+  name: T[number];
+  children: React.ReactNode;
 }
 
 const Step = <T extends readonly string[]>({ children }: StepProps<T>) => {
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
-export default Step
+export default Step;
 ```
 
 ### Funnel 컴포넌트
@@ -74,34 +76,29 @@ Funnel 컴포넌트는 현재 보여줘야 할 스텝의 이름을 `step` 프로
 (만약 다른 컴포넌트라면 스텝 이름으로 구성된 `name` 프로퍼티를 가졌다는 보장을 할 수 없기 때문입니다.)
 
 ```tsx
-import React from "react"
-import Step, { StepProps } from "./Step"
+import React from 'react';
+import Step, { StepProps } from './Step';
 
 interface FunnelProps<T extends readonly string[]> {
-  step: T[number]
-  children: React.ReactNode
+  step: T[number];
+  children: React.ReactNode;
 }
 
-const Funnel = <T extends readonly string[]>({
-  step,
-  children,
-}: FunnelProps<T>) => {
+const Funnel = <T extends readonly string[]>({ step, children }: FunnelProps<T>) => {
   const validChildren = React.Children.toArray(children)
     .filter(React.isValidElement)
-    .filter(child => child.type === Step) as React.ReactElement<StepProps<T>>[]
+    .filter((child) => child.type === Step) as React.ReactElement<StepProps<T>>[];
 
-  const currentStep = validChildren.find(child => child.props.name === step)
+  const currentStep = validChildren.find((child) => child.props.name === step);
 
   if (!currentStep) {
-    throw new Error(
-      `Funnel의 children 중에서 ${step} 스텝이 존재하지 않습니다.`
-    )
+    throw new Error(`Funnel의 children 중에서 ${step} 스텝이 존재하지 않습니다.`);
   }
 
-  return <>{currentStep}</>
-}
+  return <>{currentStep}</>;
+};
 
-export default Funnel
+export default Funnel;
 ```
 
 ### useFunnel 훅
@@ -111,34 +108,31 @@ useFunnel 훅은 스텝 이름이 될 수 있는 문자열을 배열로 받고, 
 또한 이전 스텝과 다음 스텝을 관리하는 함수를 반환합니다.
 
 ```tsx
-import { useState } from "react"
+import { useState } from 'react';
 
-const useFunnel = <T extends readonly string[]>(
-  steps: T,
-  initialStep: T[number] = steps[0]
-) => {
-  const [step, setStep] = useState<T[number]>(initialStep)
-  const currentIdx = steps.indexOf(step)
+const useFunnel = <T extends readonly string[]>(steps: T, initialStep: T[number] = steps[0]) => {
+  const [step, setStep] = useState<T[number]>(initialStep);
+  const currentIdx = steps.indexOf(step);
 
-  const hasPrev = currentIdx > 0
-  const hasNext = currentIdx < steps.length - 1
+  const hasPrev = currentIdx > 0;
+  const hasNext = currentIdx < steps.length - 1;
 
   const toPrev = () => {
     if (hasPrev) {
-      setStep(steps[currentIdx - 1])
+      setStep(steps[currentIdx - 1]);
     }
-  }
+  };
 
   const toNext = () => {
     if (hasNext) {
-      setStep(steps[currentIdx + 1])
+      setStep(steps[currentIdx + 1]);
     }
-  }
+  };
 
-  return { step, setStep, hasPrev, toPrev, hasNext, toNext }
-}
+  return { step, setStep, hasPrev, toPrev, hasNext, toNext };
+};
 
-export default useFunnel
+export default useFunnel;
 ```
 
 > 💡 **컴포넌트를 반환하는 훅?**  
@@ -156,12 +150,12 @@ export default useFunnel
 ```tsx
 function App() {
   const { step, hasNext, hasPrev, toNext, toPrev } = useFunnel([
-    "방선택",
-    "인증시간",
-    "루틴정보",
-    "비밀번호",
-    "마무리",
-  ] as const)
+    '방선택',
+    '인증시간',
+    '루틴정보',
+    '비밀번호',
+    '마무리',
+  ] as const);
 
   return (
     <>
@@ -173,8 +167,7 @@ function App() {
         <Step name="비밀번호">비밀번호 페이지</Step>
         <div>Step 컴포넌트가 아닌 요소는 렌더링에서 무시돼요.</div>
         <div>
-          children에 순서를 뒤죽박죽으로 등록해도 steps 배열에 들어가있는 순서로
-          스텝을 보여줘요.
+          children에 순서를 뒤죽박죽으로 등록해도 steps 배열에 들어가있는 순서로 스텝을 보여줘요.
         </div>
       </Funnel>
       <div>
@@ -182,7 +175,7 @@ function App() {
         {hasNext && <button onClick={toNext}>다음으로</button>}
       </div>
     </>
-  )
+  );
 }
 ```
 
@@ -214,15 +207,15 @@ const createFunnel = <T extends readonly string[]>(steps: T) => ({
 
 ```tsx
 const { Funnel, Step, useFunnel } = createFunnel([
-  "방선택",
-  "인증시간",
-  "루틴정보",
-  "비밀번호",
-  "마무리",
-] as const)
+  '방선택',
+  '인증시간',
+  '루틴정보',
+  '비밀번호',
+  '마무리',
+] as const);
 
 function App() {
-  const { step } = useFunnel()
+  const { step } = useFunnel();
 
   return (
     <Funnel step={step}>
@@ -232,7 +225,7 @@ function App() {
       <Step name="루틴정보">루틴정보 페이지</Step>
       <Step name="비밀번호">비밀번호 페이지</Step>
     </Funnel>
-  )
+  );
 }
 ```
 
